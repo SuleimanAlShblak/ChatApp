@@ -3,9 +3,18 @@ using ChatAppApi.Hubs;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddSignalR();
 
 builder.Services.AddControllers();
-builder.Services.AddSignalR();
+
+// Add CORS policy
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("ChatAppPolicy", builder =>
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader());// TODO: set specfic url
+});
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
@@ -20,9 +29,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
+
+app.UseCors("ChatAppPolicy");
+
+//app.UseAuthorization();
 
 app.MapControllers();
-app.MapHub<ChatHub>("/chathub");
+app.MapHub<ChatHub>(ChatHub.HubUrl);
 
 app.Run();

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import TopBar from './componets/TopBar.vue'
 import SideBar from './componets/SideBar.vue'
 import Button from './componets/Button.vue'
 import InputField from './componets/InputField.vue'
 import MessageBubble from './componets/MessageBubble.vue'
+import chatService, { type ChatMessageDto, type UserState } from './services/chatService'
 
 interface SidebarItem {
   id?: string
@@ -29,129 +30,172 @@ interface ChatMessage {
 }
 
 const sidebarCollapsed = ref(false)
-const activeChatId = ref('chat-1')
+const activeChatId = ref<string | null>(null)
 const messageText = ref('')
+const currentUser = ref({ id: '', name: '' })
+const users = ref<UserState[]>([])
+const messages = ref<Record<string, ChatMessage[]>>({})
+const typingUsers = ref<Set<string>>(new Set())
+const connectError = ref('')
 
-const sidebarItems = ref<SidebarItem[]>([
-  {
-    id: 'chat-1',
-    type: 'card',
-    title: 'Hekmat',
-    description: 'Online now',
-    icon: '👤',
-    clickable: true,
-    selected: true,
-    data: { chatId: 'chat-1' },
-  },
-  {
-    id: 'chat-2',
-    type: 'card',
-    title: 'Robin',
-    description: 'Last seen 5m ago',
-    icon: '👤',
-    clickable: true,
-    selected: false,
-    data: { chatId: 'chat-2' },
-  },
-  {
-    id: 'chat-3',
-    type: 'card',
-    title: 'Ava',
-    description: 'Typing…',
-    icon: '👤',
-    clickable: true,
-    selected: false,
-    data: { chatId: 'chat-3' },
-  },
-  {
-    id: 'divider-1',
-    type: 'divider',
-  },
-  {
-    id: 'new-chat',
-    type: 'button',
-    text: 'New Chat',
-    variant: 'primary',
-    size: 'md',
-    data: { action: 'new-chat' },
-  },
-])
+// Initialize user (in a real app, this would be from login)
+const initUser = () => {
+  const urlParams = new URLSearchParams(window.location.search)
+  const userId = urlParams.get('user') || 'user1'
+  const userName = urlParams.get('name') || 'User 1'
+  currentUser.value = { id: userId, name: userName }
+}
 
-const chatMessages = ref<Record<string, ChatMessage[]>>({
-  'chat-1': [
-    {
-      id: 'm1',
-      sender: 'Hekmat',
-      message: 'Hey! Are you ready for today’s update?',
-      time: '10:12',
-    },
-    {
-      id: 'm2',
-      sender: 'You',
-      message: 'Yes, I’m here. Let’s review the current tasks.',
-      time: '10:13',
-      isOwn: true,
-    },
-    {
-      id: 'm3',
-      sender: 'Hekmat',
-      message: 'Great. I sent the latest wireframes yesterday.',
-      time: '10:14',
-    },
-  ],
-  'chat-2': [
-    {
-      id: 'm4',
-      sender: 'Robin',
-      message: 'The server was updated, please check the logs.',
-      time: '09:45',
-    },
-    {
-      id: 'm5',
-      sender: 'You',
-      message: 'I will verify the deployment now.',
-      time: '09:48',
-      isOwn: true,
-    },
-  ],
-  'chat-3': [
-    { id: 'm6', sender: 'Ava', message: 'Can you share the design assets?', time: '08:30' },
-  ],
+onMounted(async () => {
+  console.log('App mounted, initializing user')
+  initUser()
+  console.log('Current user:', currentUser.value)
+
+  // Set up event handlers
+  chatService.onReceiveMessage = (message: ChatMessageDto) => {
+    console.log('Received message:', message)
+    if (message.type === 'chat') {
+      const chatMessage: ChatMessage = {
+        id: `msg-${Date.now()}`,
+        sender: message.senderId,
+        message: message.data,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        isOwn: message.senderId === currentUser.value.id
+      }
+      const chatId = message.senderId === currentUser.value.id ? message.receiverId : message.senderId
+      if (!messages.value[chatId]) messages.value[chatId] = []
+      messages.value[chatId].push(chatMessage)
+    }
+  }
+
+  chatService.onUserListUpdated = (userList: UserState[]) => {
+    console.log('User list updated:', userList)
+    users.value = userList.filter(u => u.userId !== currentUser.value.id)
+    if (!activeChatId.value && users.value.length > 0) {
+      activeChatId.value = users.value[0].userId
+    }
+  }
+
+  chatService.onTyping = (typingEvent: ChatMessageDto) => {
+    console.log('Typing event:', typingEvent)
+    if (typingEvent.data === 'true') {
+      typingUsers.value.add(typingEvent.senderId)
+    } else {
+      typingUsers.value.delete(typingEvent.senderId)
+    }
+  }
+
+  chatService.onReceiveError = (error: string) => {
+    console.error('Received error:', error)
+    connectError.value = error
+    alert(`Error: ${error}`)
+  }
+
+  console.log('Connecting to chat...')
+  try {
+    await chatService.connect({ userName: currentUser.value.id, chatRoom: 'general' })
+    console.log('Connected successfully')
+  } catch (error) {
+    console.error('Chat connection failed', error)
+    connectError.value = 'Chat connection failed: see console for details.'
+  }
 })
 
-const activeChat = computed(() => sidebarItems.value.find((item) => item.id === activeChatId.value))
-const activeMessages = computed(() => chatMessages.value[activeChatId.value] || [])
+onUnmounted(() => {
+  chatService.disconnect()
+})
+
+const sidebarItems = computed<SidebarItem[]>(() => [
+  ...users.value.map(user => ({
+    id: user.userId,
+    type: 'card' as const,
+    title: user.userName,
+    description: user.status === 'online' ? 'Online' : 'Offline',
+    icon: '👤',
+    clickable: true,
+    selected: activeChatId.value === user.userId,
+    data: { userId: user.userId }
+  })),
+  { type: 'divider' as const },
+  {
+    type: 'button' as const,
+    text: 'New Chat',
+    variant: 'primary' as const,
+    size: 'md' as const,
+    data: { action: 'new-chat' }
+  }
+])
+
+const activeChat = computed(() => users.value.find(u => u.userId === activeChatId.value))
+const activeMessages = computed(() => messages.value[activeChatId.value] || [])
+const isTyping = computed(() => activeChatId.value && typingUsers.value.has(activeChatId.value))
 
 const handleSidebarItemClick = (item: any) => {
-  if (item.type !== 'card' || !item.id) return
-  activeChatId.value = item.id
-  sidebarItems.value = sidebarItems.value.map((sidebarItem) => {
-    if (sidebarItem.type !== 'card') return sidebarItem
-    return {
-      ...sidebarItem,
-      selected: sidebarItem.id === item.id,
-    }
-  })
+  if (item.type === 'card' && item.id) {
+    activeChatId.value = item.id
+  }
 }
 
 const handleMenuClick = () => {
   sidebarCollapsed.value = !sidebarCollapsed.value
 }
 
-const sendMessage = () => {
+const sendMessage = async () => {
+  console.log('sendMessage called')
   const trimmed = messageText.value.trim()
-  if (!trimmed) return
-  const newMessage: ChatMessage = {
+  console.log('trimmed:', trimmed, 'activeChatId:', activeChatId.value)
+  if (!trimmed || !activeChatId.value) {
+    console.log('returning early')
+    return
+  }
+
+  const message: ChatMessageDto = {
+    type: 'chat',
+    senderId: currentUser.value.id,
+    receiverId: activeChatId.value,
+    data: trimmed
+  }
+
+  console.log('sending message:', message)
+  await chatService.sendMessage(message)
+
+  // Optimistically add to local messages
+  const chatMessage: ChatMessage = {
     id: `msg-${Date.now()}`,
-    sender: 'You',
+    sender: currentUser.value.name,
     message: trimmed,
     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    isOwn: true,
+    isOwn: true
   }
-  const currentMessages = chatMessages.value[activeChatId.value] ?? []
-  currentMessages.push(newMessage)
-  chatMessages.value[activeChatId.value] = currentMessages
+  if (!messages.value[activeChatId.value]) messages.value[activeChatId.value] = []
+  messages.value[activeChatId.value].push(chatMessage)
+
   messageText.value = ''
+}
+
+// Typing indicator
+let typingTimeout: number | null = null
+const handleInput = () => {
+  if (!activeChatId.value) return
+
+  const typingEvent: ChatMessageDto = {
+    type: 'typing',
+    senderId: currentUser.value.id,
+    receiverId: activeChatId.value,
+    data: 'true'
+  }
+  chatService.sendTyping(typingEvent)
+
+  if (typingTimeout) clearTimeout(typingTimeout)
+  typingTimeout = window.setTimeout(() => {
+    const stopTypingEvent: ChatMessageDto = {
+      type: 'typing',
+      senderId: currentUser.value.id,
+      receiverId: activeChatId.value,
+      data: 'false'
+    }
+    chatService.sendTyping(stopTypingEvent)
+  }, 1000)
 }
 </script>
 
@@ -164,6 +208,9 @@ const sendMessage = () => {
     </TopBar>
 
     <div class="app-content">
+      <div v-if="connectError" class="connection-error">
+        {{ connectError }}
+      </div>
       <SideBar
         :items="sidebarItems"
         title="Dirs21 Chat"
@@ -196,10 +243,13 @@ const sendMessage = () => {
               :isOwn="message.isOwn"
             />
           </div>
+          <div v-if="isTyping" class="typing-indicator">
+            {{ activeChat?.userName }} is typing...
+          </div>
         </section>
 
         <section class="chat-input-row">
-          <InputField v-model="messageText" placeholder="Type a message..." @enter="sendMessage" />
+          <InputField v-model="messageText" placeholder="Type a message..." @enter="sendMessage" @input="handleInput" />
           <Button text="Send" variant="primary" size="md" @click="sendMessage" />
         </section>
       </main>
@@ -301,5 +351,14 @@ const sendMessage = () => {
   .chat-panel {
     min-height: 0;
   }
+}
+
+.connection-error {
+  padding: 1rem;
+  margin: 0 1.5rem 1rem;
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  border-radius: 0.75rem;
 }
 </style>
