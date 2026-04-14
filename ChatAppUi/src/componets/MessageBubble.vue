@@ -1,0 +1,65 @@
+<template>
+  <div :class="['message-bubble', { 'message-bubble--own': isOwn }]">
+    <div class="message-meta">
+      <span class="message-sender">{{ sender }}</span>
+      <span class="message-time">{{ time }}</span>
+    </div>
+    <div class="message-content">{{ message }}</div>
+  </div>
+</template>
+
+<script setup lang="ts">
+interface Props {
+  sender: string
+  message: string
+  time?: string
+  isOwn?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  time: '',
+  isOwn: false,
+})
+</script>
+
+<style scoped>
+.message-bubble {
+  max-width: 70%;
+  background: white;
+  border-radius: 1rem;
+  padding: 0.9rem 1rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  border: 1px solid #e5e7eb;
+  align-self: flex-start;
+}
+
+.message-bubble--own {
+  background: #2563eb;
+  color: white;
+  border-color: transparent;
+  align-self: flex-end;
+}
+
+.message-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.message-bubble--own .message-meta {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.message-sender {
+  font-weight: 600;
+}
+
+.message-content {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+</style>
