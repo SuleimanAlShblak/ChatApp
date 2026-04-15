@@ -27,14 +27,23 @@
 
     <div v-show="!isCollapsed" class="sidebar-content">
       <div class="sidebar-items">
-        <component
-          v-for="(item, index) in items"
-          :key="item.id || index"
-          :is="getComponentType(item)"
-          v-bind="getComponentProps(item)"
+        <div
+          v-for="item in items"
+          :key="item.id"
+          class="sidebar-user-card"
+          :class="{ clickable: true }"
           @click="handleItemClick(item, $event)"
-          @action="handleItemAction(item, $event)"
-        />
+          tabindex="0"
+          @keydown.enter="handleItemClick(item, $event)"
+        >
+          <div class="user-avatar">👤</div>
+          <div class="user-info">
+            <div class="user-name">{{item.userName }}</div>
+            <div class="user-status" :class="item.status === 'online' ? 'online' : 'offline'">
+              {{ item.status === 'online' ? 'Online' : 'Offline' }}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -45,28 +54,8 @@ import { ref, computed, watch } from 'vue'
 import Card from './Card.vue'
 import Button from './Button.vue'
 
-interface SidebarItem {
-  id?: string
-  type: 'card' | 'button' | 'divider' | 'spacer'
-  // Card props
-  title?: string
-  description?: string
-  icon?: any
-  clickable?: boolean
-  selected?: boolean
-  actions?: any[]
-  data?: any
-  // Button props
-  text?: string
-  variant?: string
-  size?: string
-  // Common props
-  class?: string
-  disabled?: boolean
-}
-
 interface Props {
-  items: SidebarItem[]
+  items: { userName: string }[]
   title?: string
   collapsible?: boolean
   collapsed?: boolean
@@ -83,8 +72,8 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  itemClick: [item: SidebarItem, event?: Event]
-  itemAction: [item: SidebarItem, action: any]
+  itemClick: [item: any, event?: Event]
+  itemAction: [item: any, action: any]
   toggle: [collapsed: boolean]
 }>()
 
@@ -121,7 +110,7 @@ watch(
   },
 )
 
-const getComponentType = (item: SidebarItem) => {
+const getComponentType = (item: any) => {
   switch (item.type) {
     case 'card':
       return Card
@@ -136,7 +125,7 @@ const getComponentType = (item: SidebarItem) => {
   }
 }
 
-const getComponentProps = (item: SidebarItem) => {
+const getComponentProps = (item: any) => {
   const { type, ...props } = item
   if (item.type === 'spacer') {
     return { 'data-type': 'spacer' }
@@ -144,11 +133,11 @@ const getComponentProps = (item: SidebarItem) => {
   return props
 }
 
-const handleItemClick = (item: SidebarItem, event?: Event) => {
+const handleItemClick = (item: any, event?: Event) => {
   emit('itemClick', item, event)
 }
 
-const handleItemAction = (item: SidebarItem, action: any) => {
+const handleItemAction = (item: any, action: any) => {
   emit('itemAction', item, action)
 }
 </script>
@@ -246,5 +235,42 @@ const handleItemAction = (item: SidebarItem, action: any) => {
   .sidebar--open {
     transform: translateX(0);
   }
+}
+/* User card styles for clickable chat selection */
+.sidebar-user-card {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.sidebar-user-card:last-child {
+  border-bottom: none;
+}
+.sidebar-user-card.clickable:hover,
+.sidebar-user-card.clickable:focus {
+  background: #f3f4f6;
+}
+.user-avatar {
+  font-size: 1.5rem;
+  margin-right: 0.75rem;
+}
+.user-info {
+  flex: 1;
+}
+.user-name {
+  font-weight: 600;
+  color: #222;
+}
+.user-status {
+  font-size: 0.9rem;
+  color: #888;
+}
+.user-status.online {
+  color: #22c55e;
+}
+.user-status.offline {
+  color: #888;
 }
 </style>

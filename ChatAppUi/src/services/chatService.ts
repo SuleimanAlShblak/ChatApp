@@ -3,35 +3,43 @@ import { HubConnectionBuilder, HubConnection, LogLevel } from '@microsoft/signal
 
 const API_BASE_URL = 'http://localhost:5001';
 
-export interface UserConnection {
-  userName: string;
-  chatRoom: string;
+export interface User {
+  Id?: string;
+  UserName?: string;
+  DisplayName?: string;
+  Image?: string;
+  Status?: string;
+  SenderId?: string;
+  isTyping?: boolean;
+  ReceiverId?: string;
+  ChatRoom?: string;
 }
 
 export interface ChatMessageDto {
-  type: 'connect' | 'chat' | 'typing' | 'error';
-  senderId: string;
-  receiverId: string;
-  data: string;
+  Type: 'connect' | 'chat' | 'typing' | 'error';
+  SenderId: string;
+  ReceiverId: string;
+  Data: string;
 }
 
-export interface UserState {
-  connectionId: string;
-  userId: string;
-  userName: string;
-  status: string;
-}
+// export interface UserState {
+//   connectionId: string;
+//   userId: string;
+//   userName: string;
+//   status: string;
+// }
 
 class ChatService {
   private connection: HubConnection | null = null;
 
   // Callbacks for UI updates
   onReceiveMessage?: (message: ChatMessageDto) => void;
-  onUserListUpdated?: (users: UserState[]) => void;
+  onUserListUpdated?: (users: User[]) => void;
   onTyping?: (typingEvent: ChatMessageDto) => void;
   onReceiveError?: (error: string) => void;
+  onUserConnected?: (user: User) => void;
 
-  async connect(userConnection: UserConnection): Promise<void> {
+  async connect(user: User): Promise<void> {
     console.log('ChatService: Starting connection to', `${API_BASE_URL}/Chat`)
     this.connection = new HubConnectionBuilder()
       .withUrl(`${API_BASE_URL}/Chat`)
@@ -39,12 +47,12 @@ class ChatService {
       .build();
 
     // Event handlers
-    this.connection.on('ReceiveMessage', (message: ChatMessageDto) => {
+    this.connection.on('ReceiveSpecificMessage', (message: ChatMessageDto) => {
       console.log('ChatService: Received message:', message);
       this.onReceiveMessage?.(message);
     });
 
-    this.connection.on('UserListUpdated', (users: UserState[]) => {
+    this.connection.on('UserListUpdated', (users: User[]) => {
       console.log('ChatService: User list updated:', users);
       this.onUserListUpdated?.(users);
     });
@@ -59,12 +67,17 @@ class ChatService {
       this.onReceiveError?.(error);
     });
 
+    // this.connection.on('UserConnected', (user: UserState) => {
+    //   console.log('ChatService: User connected:', user);
+    //   this.onUserConnected?.(user);
+    // });
+
     await this.connection.start();
     console.log('ChatService: Connected to SignalR hub');
 
     // Connect user
-    console.log('ChatService: Invoking Connect with', userConnection);
-    await this.connection.invoke('Connect', userConnection);
+    console.log('ChatService: Invoking Connect with', user);
+    await this.connection.invoke('Connect', user);
   }
 
   async sendMessage(message: ChatMessageDto): Promise<void> {

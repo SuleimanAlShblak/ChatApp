@@ -1,6 +1,6 @@
 ﻿namespace ChatAppApi.Models;
 
-public class ChatMessageDto
+public class Message
 {
     public string? Type { get; set; }
 

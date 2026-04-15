@@ -1,3 +1,4 @@
+using ChatAppApi.DataService;
 using ChatAppApi.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,14 +12,15 @@ builder.Services.AddControllers();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("ChatAppPolicy", builder =>
-        builder.AllowAnyOrigin()
+        builder.WithOrigins("http://localhost:5177", "http://localhost:5176", "http://localhost:5178")
                .AllowAnyMethod()
-               .AllowAnyHeader());// TODO: set specfic url
+               .AllowAnyHeader()
+               .AllowCredentials());
 });
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
-
+builder.Services.AddSingleton<DataService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
