@@ -15,41 +15,36 @@ public class ChatHub : Hub
     /// <summary>
     /// 
     /// </summary>
-    public async Task Connect(User userConnection) //TODO: Separate of Concern
+    public async Task Connect(User user) //TODO: Separate of Concern
     {
-        //var userState = new UserState
-        //{
-        //    ConnectionId = Context.ConnectionId,
-        //    UserId = userConnection.UserId,
-        //    UserName = userConnection.UserName,
-        //    Status = "online"
-        //};
         var connectionKey = Context.ConnectionId;
 
-        if (string.IsNullOrEmpty(userConnection.ChatRoom))
+        if (string.IsNullOrEmpty(user.ChatRoom))
         {
-            userConnection.ChatRoom = "general";
+            user.ChatRoom = "general";
         }
+
+        var userId = Guid.NewGuid().ToString();
 
         var dataServiceConnection = new User
         {
             SenderId = Context.ConnectionId,
-            Id = userConnection.Id,
-            UserName = userConnection.UserName,
-            ChatRoom = userConnection.ChatRoom,
+            ReceiverId = userId,
+            Id = userId,
+            UserName = user.UserName,
+            ChatRoom = user.ChatRoom,
             Status = "online"
 
         };
-        _dataService.connections[connectionKey] = dataServiceConnection;
+        _dataService.users[connectionKey] = dataServiceConnection;
 
-        var connectedUsersKey = userConnection.Id ?? userConnection.UserName ?? Context.ConnectionId;
-        //ConnectedUsers[connectedUsersKey] = userState;
+        var connectedUsersKey = user.Id ?? user.UserName ?? Context.ConnectionId;
 
-        await Groups.AddToGroupAsync(Context.ConnectionId, userConnection.ChatRoom);
+        await Groups.AddToGroupAsync(Context.ConnectionId, user.ChatRoom);
 
         await Clients.All.SendAsync("UserConnected", dataServiceConnection);
-        await Clients.All.SendAsync("UserListUpdated", _dataService.connections.Values.ToList());
-        Console.WriteLine($"User connected: {userConnection.UserName} (ID: {userConnection.Id}) in ChatRoom: {userConnection.ChatRoom}");
+        await Clients.All.SendAsync("UserListUpdated", _dataService.users.Values.ToList());
+        Console.WriteLine($"User connected: {user.UserName} (ID: {user.Id}) in ChatRoom: {user.ChatRoom}");
     }
 
     /// <summary>
@@ -70,13 +65,13 @@ public class ChatHub : Hub
         //    return;
         //}
 
-        if (_dataService.connections.TryGetValue(Context.ConnectionId, out User userConnection))
+        if (_dataService.users.TryGetValue(Context.ConnectionId, out User user))
         {
-            if (string.IsNullOrEmpty(userConnection.ChatRoom))
+            if (string.IsNullOrEmpty(user.ChatRoom))
             {
-                userConnection.ChatRoom = "general";
+                user.ChatRoom = "general";
             }
-            await Clients.Group(userConnection.ChatRoom).SendAsync("ReceiveSpecificMessage", message);
+            await Clients.Group(user.ChatRoom).SendAsync("ReceiveSpecificMessage", message);
             Console.WriteLine($"Message from {message.SenderId} to {message.ReceiverId}: {message.Data}");
         }
         //await Clients.Client(userConnection.ConnectionId).SendAsync("ReceiveMessage", userConnection);
@@ -85,12 +80,13 @@ public class ChatHub : Hub
     /// <summary>
     /// 
     /// </summary>
-    public async Task Typing(Message typingEvent)
+    public async Task Typing(Message typingEvent, User user)
     {
-        var receiver = _dataService.connections.Values.FirstOrDefault(u => u.Id == typingEvent.ReceiverId);
-        if (receiver != null)
+        var receiver = _dataService.users.Values.FirstOrDefault(u => u.Id == typingEvent.ReceiverId);
+        if (receiver != null && !string.IsNullOrEmpty(receiver.SenderId))
         {
             await Clients.Client(receiver.SenderId).SendAsync("Typing", typingEvent);
+            user.isTyping = typingEvent.Type == "typing";
         }
     }
 
@@ -102,12 +98,12 @@ public class ChatHub : Hub
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        var user = _dataService.connections.FirstOrDefault(u => u.Value.SenderId == Context.ConnectionId);
+        var user = _dataService.users.FirstOrDefault(u => u.Value.SenderId == Context.ConnectionId);
         if (user.Key != null)
         {
-            _dataService.connections.TryRemove(user.Key, out _);
+            _dataService.users.TryRemove(user.Key, out _);
 
-            await Clients.All.SendAsync("UserListUpdated", _dataService.connections.Values.ToList());
+            await Clients.All.SendAsync("UserListUpdated", _dataService.users.Values.ToList());
         }
         Console.WriteLine($"Client disconnected: {Context.ConnectionId}");
         await base.OnDisconnectedAsync(exception);

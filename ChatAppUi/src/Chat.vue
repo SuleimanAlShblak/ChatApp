@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import TopBar from './componets/TopBar.vue'
 import SideBar from './componets/SideBar.vue'
 import Button from './componets/Button.vue'
 import InputField from './componets/InputField.vue'
 import MessageBubble from './componets/MessageBubble.vue'
-import chatService, { type ChatMessageDto, type User } from './services/chatService'
+import chatService, { normalizeUser, type ChatMessageDto, type StoredChatMessage, type User } from './services/chatService'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 
@@ -27,6 +27,38 @@ const users = ref<User[]>([])
 const messages = ref<Record<string, ChatMessage[]>>({})
 const typingUsers = ref<Set<string>>(new Set())
 const connectError = ref('')
+
+const mapMessageUI = (message: StoredChatMessage): ChatMessage => {
+  const senderName = message.SenderId === currentUser.value.id
+    ? currentUser.value.name
+    : users.value.find(user => user.Id === message.SenderId)?.UserName || message.SenderId
+
+  const timestamp = message.Timestamp || message.timestamp
+  const displayTime = timestamp
+    ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+
+  return {
+    id: `${message.SenderId}-${message.ReceiverId}-${timestamp || Date.now()}-${message.Data}`,
+    sender: senderName,
+    message: message.Data,
+    time: displayTime,
+    isOwn: message.SenderId === currentUser.value.id
+  }
+}
+
+const loadConversation = async (chatId: string) => {
+  if (!currentUser.value.id || !chatId) {
+    return
+  }
+
+  try {
+    const history = await chatService.getChatHistory(currentUser.value.id, chatId)
+    messages.value[chatId] = history.map(mapMessageUI)
+  } catch (error) {
+    console.error('Failed to load conversation history:', error)
+  }
+}
 
 // Initialize user (check localStorage first, then URL params)
 const initUser = () => {
@@ -72,19 +104,31 @@ onMounted(async () => {
   chatService.onReceiveMessage = (message: ChatMessageDto) => {
     console.log('Received message:', message)
     if (message.Type === 'chat') {
-      const chatMessage: ChatMessage = {
-        id: `msg-${Date.now()}`,
-        sender: message.SenderId,
-        message: message.Data,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isOwn: message.SenderId === currentUser.value.id
-      }
       const chatId = message.SenderId === currentUser.value.id ? message.ReceiverId : message.SenderId
-      if (!messages.value[chatId]) messages.value[chatId] = []
-      messages.value[chatId].push(chatMessage)
+      const chatMessage = mapMessageUI(message)
+
+      if (!messages.value[chatId]) {
+        messages.value[chatId] = []
+      }
+
+      const alreadyExists = messages.value[chatId].some(existing =>
+        existing.message === chatMessage.message &&
+        existing.sender === chatMessage.sender &&
+        existing.isOwn === chatMessage.isOwn
+      )
+
+      if (!alreadyExists) {
+        messages.value[chatId].push(chatMessage)
+      }
     }
   }
 
+  chatService.onUserListUpdated = (updatedUsers: User[]) => {
+    users.value = updatedUsers.filter(user => user.Id && user.Id !== currentUser.value.id)
+    if (!activeChatId.value || !users.value.some(user => user.Id === activeChatId.value)) {
+      activeChatId.value = users.value[0]?.Id || null
+    }
+  }
 
   chatService.onTyping = (typingEvent: ChatMessageDto) => {
     console.log('Typing event:', typingEvent)
@@ -102,12 +146,17 @@ onMounted(async () => {
   }
 
   chatService.onUserConnected = (user: User) => {
-    console.log('User connected:', user)
-    // Add the user to the list (including self for testing)
-    users.value = users.value.filter(u => u.Id !== user.Id) // Remove if already exists
-    users.value.push(user)
+    const normalizedUser = normalizeUser(user)
+    console.log('User connected:', normalizedUser)
+
+    if (!normalizedUser.Id || normalizedUser.Id === currentUser.value.id) {
+      return
+    }
+
+    users.value = users.value.filter(u => u.Id !== normalizedUser.Id)
+    users.value.push(normalizedUser)
     if (!activeChatId.value) {
-      activeChatId.value = user.Id || ''
+      activeChatId.value = normalizedUser.Id || ''
     }
   }
 
@@ -115,9 +164,19 @@ onMounted(async () => {
   try {
     await chatService.connect({ Id: currentUser.value.id, UserName: currentUser.value.name, ChatRoom: 'general' })
     console.log('Connected successfully')
+
+    if (activeChatId.value) {
+      await loadConversation(activeChatId.value)
+    }
   } catch (error) {
     console.error('Chat connection failed', error)
     connectError.value = 'Chat connection failed: see console for details.'
+  }
+})
+
+watch(activeChatId, (chatId) => {
+  if (chatId) {
+    loadConversation(chatId)
   }
 })
 
@@ -126,19 +185,16 @@ onUnmounted(() => {
 })
 
 const sidebarItems = computed(() => {
-    console.log('Computing sidebar items with users:', users.value, 'activeChatId:', activeChatId.value)
-    return users.value.map(user => ({
-      id: user.Id,
-      type: 'card',
-      title: user.UserName,
-      description: user.Status === 'online' ? 'Online' : 'Offline',
-      icon: '👤',
-      clickable: true,
-      selected: user.Id === activeChatId.value
-    }))
-}
-  
-)
+  console.log('Computing sidebar items with users:', users.value, 'activeChatId:', activeChatId.value)
+  return users.value.map(user => ({
+    id: user.Id,
+    type: 'card',
+    userName: user.UserName || 'Unknown user',
+    status: user.Status || 'offline',
+    clickable: true,
+    selected: user.Id === activeChatId.value
+  }))
+})
 
 const activeChat = computed(() => users.value.find(u => u.Id === activeChatId.value))
 const activeMessages = computed(() => activeChatId.value ? messages.value[activeChatId.value] || [] : [])
@@ -168,17 +224,23 @@ const sendMessage = async () => {
     return
   }
 
+  console.log(currentUser.value)
   const message: ChatMessageDto = {
     Type: 'chat',
     SenderId: currentUser.value.id,
-    ReceiverId: activeChatId.value as string,
+    ReceiverId: activeChatId.value,
     Data: trimmed
   }
 
-  console.log('sending message:', message)
-  await chatService.sendMessage(message)
-
-  messageText.value = ''
+  try {
+    console.log('sending message:', message)
+    await chatService.sendMessage(message)
+    messageText.value = ''
+    connectError.value = ''
+  } catch (error) {
+    console.error('Send message failed:', error)
+    connectError.value = 'Failed to send message.'
+  }
 }
 
 // Typing indicator
@@ -233,7 +295,7 @@ const handleLogout = async () => {
         {{ connectError }}
       </div>
       <SideBar
-        :items="users"
+        :items="sidebarItems"
         title="Dirs21 Chat"
         :collapsible="true"
         :collapsed="sidebarCollapsed"

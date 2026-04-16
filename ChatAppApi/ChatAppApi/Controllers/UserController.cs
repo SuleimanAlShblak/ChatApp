@@ -26,17 +26,17 @@ public class UserController : ControllerBase
                 return Ok(new { message = "User exists", userId = user.Id });
             }
         }
-        var userId = Guid.NewGuid().ToString();
-        var userCreate = new Models.User
-        {
-            Id = userId,
-            UserName = userName,
-            DisplayName = userName,
-            Status = "online"
-        };
+        //var userId = Guid.NewGuid().ToString();
+        //var userCreate = new Models.User
+        //{
+        //    Id = userId,
+        //    UserName = userName,
+        //    DisplayName = userName,
+        //    Status = "online"
+        //};
 
-        _dataService.connections[userId] = userCreate;
-        return Ok(new { message = "User added", userId = userId });
+        //_dataService.users[userId] = userCreate;
+        return Ok(new { message = "User added"/*, userId = /*userId*/});
 
     }
 
@@ -55,7 +55,7 @@ public class UserController : ControllerBase
                     DisplayName = user.DisplayName,
                     Status = "offline"
                 };
-                _dataService.connections[userId] = userUpdate;
+                _dataService.users[userId] = userUpdate;
                 return "User logged out";
             }
             else if (user.Status == "offline" && user.Id == userId)
@@ -75,7 +75,7 @@ public class UserController : ControllerBase
     [HttpGet("{userId}")]
     public IActionResult GetUser(string userId)
     {
-        if (_dataService.connections.TryGetValue(userId, out var user))
+        if (_dataService.users.TryGetValue(userId, out var user))
         {
             return Ok(user);
         }
@@ -84,7 +84,7 @@ public class UserController : ControllerBase
 
     private List<User> GetUsers()
     {
-        var users = _dataService.connections.Values.ToList();
+        var users = _dataService.users.Values.ToList();
         return users;
     }
 }
