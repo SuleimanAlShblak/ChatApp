@@ -46,19 +46,19 @@ public class UserController : ControllerBase
         var users = GetUsers();
         foreach (var user in users)
         {
-            if (user.Status == "online" && user.Id == userId)
+            if (user.Status == Status.Online && user.Id == userId)
             {
                 var userUpdate = new User
                 {
                     Id = userId,
                     UserName = user.UserName,
                     DisplayName = user.DisplayName,
-                    Status = "offline"
+                    Status = Status.Offline
                 };
                 _dataService.users[userId] = userUpdate;
                 return "User logged out";
             }
-            else if (user.Status == "offline" && user.Id == userId)
+            else if (user.Status == Status.Offline && user.Id == userId)
             {
                 return "User already logged out";
             }

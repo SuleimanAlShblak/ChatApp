@@ -40,7 +40,7 @@ export const normalizeUser = (user: User): User => ({
   UserName: user.UserName ?? user.userName ?? user.DisplayName ?? user.displayName ?? '',
   DisplayName: user.DisplayName ?? user.displayName ?? user.UserName ?? user.userName ?? '',
   Image: user.Image ?? user.image ?? '',
-  Status: user.Status ?? user.status ?? 'offline',
+  Status: normalizeStatus(user.Status ?? user.status),
   SenderId: user.SenderId ?? user.senderId ?? '',//ToDO: chcke this 
   ReceiverId: user.ReceiverId ?? user.receiverId ?? '',
   ChatRoom: user.ChatRoom ?? user.chatRoom ?? 'general',
@@ -53,6 +53,12 @@ export const normalizeMessage = (message: any): ChatMessageDto => ({
   ReceiverId: message.ReceiverId ?? message.receiverId ?? '',
   Data: message.Data ?? message.data ?? '',
 });
+
+const normalizeStatus = (status: unknown): string => {
+  if (status === 0 || status === "Online" || status === "online") return "online"
+  if (status === 1 || status === "Offline" || status === "offline") return "offline"
+  return "offline"
+}
 
 const hasValidValue = (value: string | null | undefined): value is string => {
   return Boolean(value && value !== 'undefined' && value !== 'null')

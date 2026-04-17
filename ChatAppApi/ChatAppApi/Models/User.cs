@@ -10,7 +10,7 @@ public class User
 
     public string? Image { get; set; }
 
-    public string? Status { get; set; } = "offline";
+    public Status Status { get; set; } = Status.Offline;
 
     public string? SenderId { get; set; }// ToDO: Separate of Concern create a new class for message sending and receiving inherit from this class
 

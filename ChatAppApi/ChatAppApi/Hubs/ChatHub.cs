@@ -33,7 +33,7 @@ public class ChatHub : Hub
             Id = userId,
             UserName = user.UserName,
             ChatRoom = user.ChatRoom,
-            Status = "online"
+            Status = Status.Online
 
         };
         _dataService.users[userId] = dataServiceConnection;
