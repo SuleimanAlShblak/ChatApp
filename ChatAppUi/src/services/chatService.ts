@@ -119,7 +119,25 @@ class ChatService {
     await this.connection.invoke('Connect', user);
   }
 
-  async sendMessage(message: ChatMessageDto): Promise<void> {
+  // async sendMessage(message: ChatMessageDto): Promise<void> {
+  //   const normalizedMessage = normalizeMessage(message);
+  //   console.log('ChatService: sendMessage called with', normalizedMessage);
+
+  //   if (!hasValidValue(normalizedMessage.SenderId) || !hasValidValue(normalizedMessage.ReceiverId)) {
+  //     throw new Error('Cannot send message without a valid sender and receiver.');
+  //   }
+
+  //   await axios.post(
+  //     `${API_BASE_URL}/api/chat/message/${encodeURIComponent(normalizedMessage.SenderId)}/${encodeURIComponent(normalizedMessage.ReceiverId)}/${encodeURIComponent(normalizedMessage.Data)}`
+  //   );
+
+  //   if (this.connection) {
+  //     console.log('ChatService: Invoking SendMessage');
+  //     await this.connection.invoke('SendMessage', normalizedMessage);
+  //   }
+  // }
+  // Send messages 
+  async sendMessage(message: ChatMessageDto): Promise<StoredChatMessage> {
     const normalizedMessage = normalizeMessage(message);
     console.log('ChatService: sendMessage called with', normalizedMessage);
 
@@ -127,21 +145,39 @@ class ChatService {
       throw new Error('Cannot send message without a valid sender and receiver.');
     }
 
-    await axios.post(
-      `${API_BASE_URL}/api/chat/message/${encodeURIComponent(normalizedMessage.SenderId)}/${encodeURIComponent(normalizedMessage.ReceiverId)}/${encodeURIComponent(normalizedMessage.Data)}`
+    const response = await axios.post(
+      API_BASE_URL + '/api/chat/message/' +
+      encodeURIComponent(normalizedMessage.SenderId) + '/' +
+      encodeURIComponent(normalizedMessage.ReceiverId) + '/' +
+      encodeURIComponent(normalizedMessage.Data)
     );
 
     if (this.connection) {
       console.log('ChatService: Invoking SendMessage');
       await this.connection.invoke('SendMessage', normalizedMessage);
     }
+
+    return {
+      ...normalizedMessage,
+      ...(response.data ?? {}),
+      Timestamp: response.data?.Timestamp ?? response.data?.timestamp ?? new Date().toISOString(),
+    } as StoredChatMessage;
   }
 
   async sendTyping(typingEvent: ChatMessageDto): Promise<void> {
     const normalizedTypingEvent = normalizeMessage(typingEvent)
 
     if (this.connection && hasValidValue(normalizedTypingEvent.SenderId) && hasValidValue(normalizedTypingEvent.ReceiverId)) {
-      await this.connection.invoke('Typing', normalizedTypingEvent);
+      try {
+        await this.connection.invoke('Typing', normalizedTypingEvent, {
+          Id: normalizedTypingEvent.SenderId,
+          SenderId: normalizedTypingEvent.SenderId,
+          ReceiverId: normalizedTypingEvent.ReceiverId,
+          ChatRoom: 'general'
+        });
+      } catch (error) {
+        console.warn('ChatService: Typing invoke failed', error)
+      }
     }
   }
 

@@ -5,7 +5,7 @@ import SideBar from './componets/SideBar.vue'
 import Button from './componets/Button.vue'
 import InputField from './componets/InputField.vue'
 import MessageBubble from './componets/MessageBubble.vue'
-import chatService, { normalizeUser, type ChatMessageDto, type StoredChatMessage, type User } from './services/chatService'
+import chatService, { normalizeMessage, normalizeUser, type ChatMessageDto, type StoredChatMessage, type User } from './services/chatService'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 
@@ -27,6 +27,7 @@ const users = ref<User[]>([])
 const messages = ref<Record<string, ChatMessage[]>>({})
 const typingUsers = ref<Set<string>>(new Set())
 const connectError = ref('')
+let conversationRefreshTimer: number | null = null
 
 const isValidUserId = (value: string | null | undefined): value is string => {
   return Boolean(value && value !== 'undefined' && value !== 'null')
@@ -50,22 +51,39 @@ const syncCurrentUserId = (availableUsers: User[]) => {
   }
 }
 
-const mapMessageUI = (message: StoredChatMessage): ChatMessage => {
-  const senderName = message.SenderId === currentUser.value.id
-    ? currentUser.value.name
-    : users.value.find(user => user.Id === message.SenderId)?.UserName || message.SenderId
+// Append message to conversation 
+const appendMessageToConversation = (chatId: string, chatMessage: ChatMessage) => {
+  if (!messages.value[chatId]) {
+    messages.value[chatId] = []
+  }
 
-  const timestamp = message.Timestamp || message.timestamp
+  const alreadyExists = messages.value[chatId].some(existing =>
+    existing.id === chatMessage.id
+  )
+
+  if (!alreadyExists) {
+    messages.value[chatId].push(chatMessage)
+  }
+}
+
+const mapMessageUI = (message: StoredChatMessage): ChatMessage => {
+  const normalizedMessage = normalizeMessage(message ?? {})
+  const timestamp = message?.Timestamp || message?.timestamp
+
+  const senderName = normalizedMessage.SenderId === currentUser.value.id
+    ? currentUser.value.name
+    : users.value.find(user => user.Id === normalizedMessage.SenderId)?.UserName || normalizedMessage.SenderId || 'Unknown'
+
   const displayTime = timestamp
     ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
   return {
-    id: `${message.SenderId}-${message.ReceiverId}-${timestamp || Date.now()}-${message.Data}`,
+    id: `${normalizedMessage.SenderId || 'unknown'}-${normalizedMessage.ReceiverId || 'unknown'}-${timestamp || Date.now()}-${normalizedMessage.Data || ''}`,
     sender: senderName,
-    message: message.Data,
+    message: normalizedMessage.Data || '',
     time: displayTime,
-    isOwn: message.SenderId === currentUser.value.id
+    isOwn: normalizedMessage.SenderId === currentUser.value.id
   }
 }
 
@@ -76,9 +94,36 @@ const loadConversation = async (chatId: string) => {
 
   try {
     const history = await chatService.getChatHistory(currentUser.value.id, chatId)
-    messages.value[chatId] = history.map(mapMessageUI)
+    const historyMessages = history.map(mapMessageUI)
+
+    if (!messages.value[chatId]) {
+      messages.value[chatId] = []
+    }
+
+    for (const historyMessage of historyMessages) {
+      appendMessageToConversation(chatId, historyMessage)
+    }
   } catch (error) {
     console.error('Failed to load conversation history:', error)
+  }
+}
+
+const startConversationRefresh = () => {
+  if (conversationRefreshTimer) {
+    window.clearInterval(conversationRefreshTimer)
+  }
+
+  conversationRefreshTimer = window.setInterval(() => {
+    if (activeChatId.value) {
+      loadConversation(activeChatId.value)
+    }
+  }, 1500)
+}
+
+const stopConversationRefresh = () => {
+  if (conversationRefreshTimer) {
+    window.clearInterval(conversationRefreshTimer)
+    conversationRefreshTimer = null
   }
 }
 
@@ -117,6 +162,7 @@ const initUser = () => {
 onMounted(async () => {
   console.log('Chat mounted, initializing user')
   initUser()
+  startConversationRefresh()
   console.log('Current user:', currentUser.value)
 
   // TODO: look how fetching is done
@@ -134,27 +180,18 @@ onMounted(async () => {
   }
 
   // Set up event handlers
-  chatService.onReceiveMessage = (message: ChatMessageDto) => {
-    console.log('Received message:', message)
-    if (message.Type === 'chat') {
-      const chatId = message.SenderId === currentUser.value.id ? message.ReceiverId : message.SenderId
-      const chatMessage = mapMessageUI(message)
-
-      if (!messages.value[chatId]) {
-        messages.value[chatId] = []
-      }
-
-      const alreadyExists = messages.value[chatId].some(existing =>
-        existing.message === chatMessage.message &&
-        existing.sender === chatMessage.sender &&
-        existing.isOwn === chatMessage.isOwn
-      )
-
-      if (!alreadyExists) {
-        messages.value[chatId].push(chatMessage)
-      }
+chatService.onReceiveMessage = (message: ChatMessageDto) => {
+  console.log('Received message:', message)
+  if (message.Type === 'chat' || message.Type === 'error' || message.Type === 'typing') {
+    if (message.Type !== 'chat') {
+      return
     }
   }
+
+  const chatId = message.SenderId === currentUser.value.id ? message.ReceiverId : message.SenderId
+  const chatMessage = mapMessageUI(message)
+  appendMessageToConversation(chatId, chatMessage)
+}
 
   chatService.onUserListUpdated = (updatedUsers: User[]) => {
     const normalizedUsers = updatedUsers.map(normalizeUser)
@@ -224,6 +261,7 @@ watch(activeChatId, (chatId) => {
 })
 
 onUnmounted(() => {
+  stopConversationRefresh()
   chatService.disconnect()
 })
 
@@ -282,7 +320,9 @@ const sendMessage = async () => {
 
   try {
     console.log('sending message:', message)
-    await chatService.sendMessage(message)
+    const savedMessage = await chatService.sendMessage(message)
+    const localBubble = mapMessageUI(savedMessage)
+    appendMessageToConversation(activeChatId.value, localBubble)
     messageText.value = ''
     connectError.value = ''
   } catch (error) {
