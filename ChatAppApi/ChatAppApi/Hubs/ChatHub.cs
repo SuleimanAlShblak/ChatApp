@@ -17,7 +17,7 @@ public class ChatHub : Hub
     /// </summary>
     public async Task Connect(User user) //TODO: Separate of Concern
     {
-        var connectionKey = Context.ConnectionId;
+        //var connectionKey = Context.ConnectionId;
 
         if (string.IsNullOrEmpty(user.ChatRoom))
         {
@@ -28,7 +28,7 @@ public class ChatHub : Hub
 
         var dataServiceConnection = new User
         {
-            SenderId = Context.ConnectionId,
+            SenderId = userId,
             ReceiverId = userId,
             Id = userId,
             UserName = user.UserName,
@@ -36,7 +36,7 @@ public class ChatHub : Hub
             Status = "online"
 
         };
-        _dataService.users[connectionKey] = dataServiceConnection;
+        _dataService.users[userId] = dataServiceConnection;
 
         var connectedUsersKey = user.Id ?? user.UserName ?? Context.ConnectionId;
 

@@ -54,8 +54,18 @@ import { ref, computed, watch } from 'vue'
 import Card from './Card.vue'
 import Button from './Button.vue'
 
+interface SidebarItem {
+  id?: string
+  userName: string
+  status?: string
+  type?: string
+  clickable?: boolean
+  selected?: boolean
+  data?: any
+}
+
 interface Props {
-  items: { userName: string }[]
+  items: SidebarItem[]
   title?: string
   collapsible?: boolean
   collapsed?: boolean

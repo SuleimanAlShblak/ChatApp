@@ -28,6 +28,28 @@ const messages = ref<Record<string, ChatMessage[]>>({})
 const typingUsers = ref<Set<string>>(new Set())
 const connectError = ref('')
 
+const isValidUserId = (value: string | null | undefined): value is string => {
+  return Boolean(value && value !== 'undefined' && value !== 'null')
+}
+
+const syncCurrentUserId = (availableUsers: User[]) => {
+  if (!currentUser.value.name.trim()) {
+    return
+  }
+
+  const normalizedName = currentUser.value.name.trim().toLowerCase()
+  const matchingUser = availableUsers.find(user => {
+    const candidateName = (user.UserName || user.DisplayName || '').trim().toLowerCase()
+    return candidateName === normalizedName
+  })
+
+  if (matchingUser?.Id && matchingUser.Id !== currentUser.value.id) {
+    currentUser.value = { ...currentUser.value, id: matchingUser.Id }
+    localStorage.setItem('chatUserId', matchingUser.Id)
+    localStorage.setItem('chatUserName', currentUser.value.name)
+  }
+}
+
 const mapMessageUI = (message: StoredChatMessage): ChatMessage => {
   const senderName = message.SenderId === currentUser.value.id
     ? currentUser.value.name
@@ -62,23 +84,33 @@ const loadConversation = async (chatId: string) => {
 
 // Initialize user (check localStorage first, then URL params)
 const initUser = () => {
-  // Check localStorage for saved session
   const savedUserId = localStorage.getItem('chatUserId')
   const savedUserName = localStorage.getItem('chatUserName')
 
-  if (savedUserId && savedUserName) {
-    currentUser.value = { id: savedUserId, name: savedUserName }
+  if (savedUserName) {
+    currentUser.value = {
+      id: isValidUserId(savedUserId) ? savedUserId : '',
+      name: savedUserName
+    }
+
+    if (!isValidUserId(savedUserId)) {
+      localStorage.removeItem('chatUserId')
+    }
     return
   }
 
-  // Fallback to URL params
   const urlParams = new URLSearchParams(window.location.search)
-  const userId = urlParams.get('user') || 'user1'
+  const userId = urlParams.get('user')
   const userName = urlParams.get('name') || 'User 1'
-  currentUser.value = { id: userId, name: userName }
 
-  // Save to localStorage for future sessions
-  localStorage.setItem('chatUserId', userId)
+  currentUser.value = {
+    id: isValidUserId(userId) ? userId : '',
+    name: userName
+  }
+
+  if (isValidUserId(userId)) {
+    localStorage.setItem('chatUserId', userId)
+  }
   localStorage.setItem('chatUserName', userName)
 }
 
@@ -91,7 +123,8 @@ onMounted(async () => {
   // Fetch user list from backend REST API on mount 
   try {
     const response = await axios.get('http://localhost:5001/api/user/all')
-    users.value = response.data
+    users.value = (response.data as User[]).map(normalizeUser)
+    syncCurrentUserId(users.value)
     if (!activeChatId.value && users.value.length > 0) {
       activeChatId.value = users.value[0]?.Id || ''
     }
@@ -124,7 +157,9 @@ onMounted(async () => {
   }
 
   chatService.onUserListUpdated = (updatedUsers: User[]) => {
-    users.value = updatedUsers.filter(user => user.Id && user.Id !== currentUser.value.id)
+    const normalizedUsers = updatedUsers.map(normalizeUser)
+    syncCurrentUserId(normalizedUsers)
+    users.value = normalizedUsers.filter(user => user.Id && user.Id !== currentUser.value.id)
     if (!activeChatId.value || !users.value.some(user => user.Id === activeChatId.value)) {
       activeChatId.value = users.value[0]?.Id || null
     }
@@ -148,6 +183,14 @@ onMounted(async () => {
   chatService.onUserConnected = (user: User) => {
     const normalizedUser = normalizeUser(user)
     console.log('User connected:', normalizedUser)
+
+    const normalizedCurrentName = currentUser.value.name.trim().toLowerCase()
+    const normalizedIncomingName = (normalizedUser.UserName || normalizedUser.DisplayName || '').trim().toLowerCase()
+
+    if (normalizedIncomingName && normalizedIncomingName === normalizedCurrentName) {
+      syncCurrentUserId([normalizedUser])
+      return
+    }
 
     if (!normalizedUser.Id || normalizedUser.Id === currentUser.value.id) {
       return
@@ -224,6 +267,11 @@ const sendMessage = async () => {
     return
   }
 
+  if (!isValidUserId(currentUser.value.id)) {
+    connectError.value = 'Your user session is still connecting. Please wait a moment and try again.'
+    return
+  }
+
   console.log(currentUser.value)
   const message: ChatMessageDto = {
     Type: 'chat',
@@ -246,7 +294,7 @@ const sendMessage = async () => {
 // Typing indicator
 let typingTimeout: number | null = null
 const handleInput = () => {
-  if (!activeChatId.value) return
+  if (!activeChatId.value || !isValidUserId(currentUser.value.id)) return
 
   const typingEvent: ChatMessageDto = {
     Type: 'typing',

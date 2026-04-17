@@ -41,7 +41,7 @@ export const normalizeUser = (user: User): User => ({
   DisplayName: user.DisplayName ?? user.displayName ?? user.UserName ?? user.userName ?? '',
   Image: user.Image ?? user.image ?? '',
   Status: user.Status ?? user.status ?? 'offline',
-  SenderId: user.SenderId ?? user.senderId ?? '',
+  SenderId: user.SenderId ?? user.senderId ?? '',//ToDO: chcke this 
   ReceiverId: user.ReceiverId ?? user.receiverId ?? '',
   ChatRoom: user.ChatRoom ?? user.chatRoom ?? 'general',
   isTyping: user.isTyping ?? false,
@@ -53,6 +53,10 @@ export const normalizeMessage = (message: any): ChatMessageDto => ({
   ReceiverId: message.ReceiverId ?? message.receiverId ?? '',
   Data: message.Data ?? message.data ?? '',
 });
+
+const hasValidValue = (value: string | null | undefined): value is string => {
+  return Boolean(value && value !== 'undefined' && value !== 'null')
+}
 
 // export interface UserState {
 //   connectionId: string;
@@ -119,6 +123,10 @@ class ChatService {
     const normalizedMessage = normalizeMessage(message);
     console.log('ChatService: sendMessage called with', normalizedMessage);
 
+    if (!hasValidValue(normalizedMessage.SenderId) || !hasValidValue(normalizedMessage.ReceiverId)) {
+      throw new Error('Cannot send message without a valid sender and receiver.');
+    }
+
     await axios.post(
       `${API_BASE_URL}/api/chat/message/${encodeURIComponent(normalizedMessage.SenderId)}/${encodeURIComponent(normalizedMessage.ReceiverId)}/${encodeURIComponent(normalizedMessage.Data)}`
     );
@@ -130,8 +138,10 @@ class ChatService {
   }
 
   async sendTyping(typingEvent: ChatMessageDto): Promise<void> {
-    if (this.connection) {
-      await this.connection.invoke('Typing', typingEvent);
+    const normalizedTypingEvent = normalizeMessage(typingEvent)
+
+    if (this.connection && hasValidValue(normalizedTypingEvent.SenderId) && hasValidValue(normalizedTypingEvent.ReceiverId)) {
+      await this.connection.invoke('Typing', normalizedTypingEvent);
     }
   }
 
