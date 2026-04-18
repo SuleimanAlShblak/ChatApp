@@ -9,7 +9,7 @@
       :disabled="disabled"
       :required="required"
       :class="inputClass"
-      @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+      @input="emit('update:modelValue', ($event.target as HTMLInputElement).value); emit('input', $event)"
       @keydown.enter="$emit('enter', $event)"
       @blur="$emit('blur', $event)"
       @focus="$emit('focus', $event)"
@@ -42,6 +42,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   'update:modelValue': [value: string | number]
+  input: [event: Event]
   blur: [event: FocusEvent]
   focus: [event: FocusEvent]
   enter: [event: KeyboardEvent]

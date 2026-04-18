@@ -106,8 +106,9 @@ class ChatService {
     });
 
     this.connection.on('Typing', (typingEvent: ChatMessageDto) => {
-      console.log('ChatService: Typing event:', typingEvent);
-      this.onTyping?.(typingEvent);
+      const normalizedTypingEvent = normalizeMessage(typingEvent);
+      console.log('ChatService: Typing event:', normalizedTypingEvent);
+      this.onTyping?.(normalizedTypingEvent);
     });
 
     this.connection.on('ReceiveError', (error: string) => {
@@ -181,12 +182,7 @@ class ChatService {
 
     if (this.connection && hasValidValue(normalizedTypingEvent.SenderId) && hasValidValue(normalizedTypingEvent.ReceiverId)) {
       try {
-        await this.connection.invoke('Typing', normalizedTypingEvent, {
-          Id: normalizedTypingEvent.SenderId,
-          SenderId: normalizedTypingEvent.SenderId,
-          ReceiverId: normalizedTypingEvent.ReceiverId,
-          ChatRoom: 'general'
-        });
+        await this.connection.invoke('Typing', normalizedTypingEvent)
       } catch (error) {
         console.warn('ChatService: Typing invoke failed', error)
       }

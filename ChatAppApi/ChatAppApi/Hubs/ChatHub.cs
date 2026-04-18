@@ -42,6 +42,7 @@ public class ChatHub : Hub
                 SenderId = userId,
                 ReceiverId = userId,
                 Id = userId,
+                ConnectionId = Context.ConnectionId,
                 UserName = user.UserName,
                 ChatRoom = user.ChatRoom,
                 Status = Status.Online
@@ -91,21 +92,33 @@ public class ChatHub : Hub
     /// <summary>
     /// 
     /// </summary>
-    public async Task OnTyping(Message typingEvent)
+    public async Task Typing(Message typingEvent)
     {
-        var receiver = _dataService.users.Values.FirstOrDefault(u => u.Id == typingEvent.ReceiverId);
-        if (receiver != null && !string.IsNullOrEmpty(receiver.SenderId))
+        if (typingEvent is null || string.IsNullOrEmpty(typingEvent.SenderId) || string.IsNullOrEmpty(typingEvent.ReceiverId))
         {
-            await Clients.Client(receiver.SenderId).SendAsync("Typing", typingEvent);
+            await Clients.Caller.SendAsync("ReceiveError", "Invalid typing event");
+            return;
+        }
+
+        var receiver = _dataService.users.Values.FirstOrDefault(u => u.Id == typingEvent.ReceiverId);
+        if (receiver != null && !string.IsNullOrEmpty(receiver.ConnectionId))
+        {
+            await Clients.Client(receiver.ConnectionId).SendAsync("Typing", typingEvent);
         }
     }
 
-    public async Task OnStopTyping(Message typingEvent)
+    public async Task StopTyping(Message typingEvent)
     {
-        var receiver = _dataService.users.Values.FirstOrDefault(u => u.Id == typingEvent.ReceiverId);
-        if (receiver != null && !string.IsNullOrEmpty(receiver.SenderId))
+        if (typingEvent is null || string.IsNullOrEmpty(typingEvent.SenderId) || string.IsNullOrEmpty(typingEvent.ReceiverId))
         {
-            await Clients.Client(receiver.SenderId).SendAsync("StopTyping", typingEvent);
+            await Clients.Caller.SendAsync("ReceiveError", "Invalid typing event");
+            return;
+        }
+
+        var receiver = _dataService.users.Values.FirstOrDefault(u => u.Id == typingEvent.ReceiverId);
+        if (receiver != null && !string.IsNullOrEmpty(receiver.ConnectionId))
+        {
+            await Clients.Client(receiver.ConnectionId).SendAsync("Typing", typingEvent);
         }
     }
 
