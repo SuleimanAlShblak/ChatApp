@@ -1,58 +1,5 @@
-<template>
-  <div class="sidebar" :class="sidebarClass" :style="sidebarStyle">
-    <div v-if="title" class="sidebar-header">
-      <!-- <h2 class="sidebar-title">{{ title }}</h2> -->
-      <!-- <button
-        v-if="collapsible"
-        class="sidebar-toggle"
-        @click="toggleCollapsed"
-        :aria-label="isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
-      >
-        <svg
-          :class="{ 'rotate-180': isCollapsed }"
-          class="w-4 h-4 transition-transform"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
-      </button> -->
-    </div>
-
-    <div v-show="!isCollapsed" class="sidebar-content">
-      <div class="sidebar-items">
-        <div
-          v-for="item in items"
-          :key="item.id"
-          class="sidebar-user-card"
-          :class="{ clickable: true }"
-          @click="handleItemClick(item, $event)"
-          tabindex="0"
-          @keydown.enter="handleItemClick(item, $event)"
-        >
-          <div class="user-avatar">👤</div>
-          <div class="user-info">
-            <div class="user-name">{{item.userName }}</div>
-            <div class="user-status" :class="item.status === 'online' ? 'online' : 'offline'">
-              {{ item.status === 'online' ? 'Online' : 'Offline' }}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import Card from './Card.vue'
-import Button from './Button.vue'
 
 interface SidebarItem {
   id?: string
@@ -108,11 +55,6 @@ const sidebarStyle = computed(() => {
   }
 })
 
-const toggleCollapsed = () => {
-  isCollapsed.value = !isCollapsed.value
-  emit('toggle', isCollapsed.value)
-}
-
 watch(
   () => props.collapsed,
   (value) => {
@@ -120,37 +62,38 @@ watch(
   },
 )
 
-const getComponentType = (item: any) => {
-  switch (item.type) {
-    case 'card':
-      return Card
-    case 'button':
-      return Button
-    case 'divider':
-      return 'hr'
-    case 'spacer':
-      return 'div'
-    default:
-      return 'div'
-  }
-}
-
-const getComponentProps = (item: any) => {
-  const { type, ...props } = item
-  if (item.type === 'spacer') {
-    return { 'data-type': 'spacer' }
-  }
-  return props
-}
-
 const handleItemClick = (item: any, event?: Event) => {
   emit('itemClick', item, event)
 }
 
-const handleItemAction = (item: any, action: any) => {
-  emit('itemAction', item, action)
-}
 </script>
+
+<template>
+  <div class="sidebar" :class="sidebarClass" :style="sidebarStyle">
+    <div v-show="!isCollapsed" class="sidebar-content">
+      <div class="sidebar-items">
+        <div
+          v-for="item in items"
+          :key="item.id"
+          class="sidebar-user-card"
+          :class="{ clickable: true }"
+          @click="handleItemClick(item, $event)"
+          tabindex="0"
+          @keydown.enter="handleItemClick(item, $event)"
+        >
+          <div class="user-avatar">👤</div>
+          <div class="user-info">
+            <div class="user-name">{{item.userName }}</div>
+            <div class="user-status" :class="item.status === 'online' ? 'online' : 'offline'">
+              {{ item.status === 'online' ? 'Online' : 'Offline' }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
 
 <style scoped>
 .sidebar {

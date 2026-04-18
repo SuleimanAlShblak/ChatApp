@@ -1,3 +1,35 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+
+interface Props {
+  title?: string
+  showMenuButton?: boolean
+  sticky?: boolean
+  class?: string
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  showMenuButton: false,
+  sticky: false,
+})
+
+const emit = defineEmits<{
+  menuClick: []
+}>()
+
+const topbarClass = computed(() => {
+  return [
+    'topbar',
+    {
+      'topbar--sticky': props.sticky,
+    },
+    props.class,
+  ]
+    .filter(Boolean)
+    .join(' ')
+})
+</script>
+
 <template>
   <header class="topbar" :class="topbarClass">
     <div class="topbar-left">
@@ -33,38 +65,6 @@
     </div>
   </header>
 </template>
-
-<script setup lang="ts">
-import { computed } from 'vue'
-
-interface Props {
-  title?: string
-  showMenuButton?: boolean
-  sticky?: boolean
-  class?: string
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  showMenuButton: false,
-  sticky: false,
-})
-
-const emit = defineEmits<{
-  menuClick: []
-}>()
-
-const topbarClass = computed(() => {
-  return [
-    'topbar',
-    {
-      'topbar--sticky': props.sticky,
-    },
-    props.class,
-  ]
-    .filter(Boolean)
-    .join(' ')
-})
-</script>
 
 <style scoped>
 .topbar {

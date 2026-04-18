@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
-import TopBar from './componets/TopBar.vue'
-import SideBar from './componets/SideBar.vue'
-import Button from './componets/Button.vue'
-import InputField from './componets/InputField.vue'
-import MessageBubble from './componets/MessageBubble.vue'
-import TypingIndicator from './componets/TypingIndicator.vue'
-import chatService, { normalizeMessage, normalizeUser, type ChatMessageDto, type StoredChatMessage, type User } from './services/chatService'
+import TopBar from '../components/TopBar.vue'
+import SideBar from '../components/SideBar.vue'
+import Button from '../components/Button.vue'
+import InputField from '../components/InputField.vue'
+import MessageBubble from '../components/MessageBubble.vue'
+import TypingIndicator from '../components/TypingIndicator.vue'
+import chatService, {
+  normalizeMessage,
+  normalizeUser,
+  type Message,
+  type StoredChatMessage,
+  type User,
+} from '../services/chatService'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
-
 
 interface ChatMessage {
   id: string
@@ -40,7 +45,7 @@ const syncCurrentUserId = (availableUsers: User[]) => {
   }
 
   const normalizedName = currentUser.value.name.trim().toLowerCase()
-  const matchingUser = availableUsers.find(user => {
+  const matchingUser = availableUsers.find((user) => {
     const candidateName = (user.UserName || user.DisplayName || '').trim().toLowerCase()
     return candidateName === normalizedName
   })
@@ -52,15 +57,13 @@ const syncCurrentUserId = (availableUsers: User[]) => {
   }
 }
 
-// Append message to conversation 
+// Append message to conversation
 const appendMessageToConversation = (chatId: string, chatMessage: ChatMessage) => {
   if (!messages.value[chatId]) {
     messages.value[chatId] = []
   }
 
-  const alreadyExists = messages.value[chatId].some(existing =>
-    existing.id === chatMessage.id
-  )
+  const alreadyExists = messages.value[chatId].some((existing) => existing.id === chatMessage.id)
 
   if (!alreadyExists) {
     messages.value[chatId].push(chatMessage)
@@ -69,11 +72,14 @@ const appendMessageToConversation = (chatId: string, chatMessage: ChatMessage) =
 
 const mapMessageUI = (message: StoredChatMessage): ChatMessage => {
   const normalizedMessage = normalizeMessage(message ?? {})
-  const timestamp = message?.Timestamp || message?.timestamp
+  const timestamp = message?.Timestamp
 
-  const senderName = normalizedMessage.SenderId === currentUser.value.id
-    ? currentUser.value.name
-    : users.value.find(user => user.Id === normalizedMessage.SenderId)?.UserName || normalizedMessage.SenderId || 'Unknown'
+  const senderName =
+    normalizedMessage.SenderId === currentUser.value.id
+      ? currentUser.value.name
+      : users.value.find((user) => user.Id === normalizedMessage.SenderId)?.UserName ||
+        normalizedMessage.SenderId ||
+        'Unknown'
 
   const displayTime = timestamp
     ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -84,7 +90,7 @@ const mapMessageUI = (message: StoredChatMessage): ChatMessage => {
     sender: senderName,
     message: normalizedMessage.Data || '',
     time: displayTime,
-    isOwn: normalizedMessage.SenderId === currentUser.value.id
+    isOwn: normalizedMessage.SenderId === currentUser.value.id,
   }
 }
 
@@ -136,7 +142,7 @@ const initUser = () => {
   if (savedUserName) {
     currentUser.value = {
       id: isValidUserId(savedUserId) ? savedUserId : '',
-      name: savedUserName
+      name: savedUserName,
     }
 
     if (!isValidUserId(savedUserId)) {
@@ -151,7 +157,7 @@ const initUser = () => {
 
   currentUser.value = {
     id: isValidUserId(userId) ? userId : '',
-    name: userName
+    name: userName,
   }
 
   if (isValidUserId(userId)) {
@@ -166,8 +172,7 @@ onMounted(async () => {
   startConversationRefresh()
   console.log('Current user:', currentUser.value)
 
-  // TODO: look how fetching is done
-  // Fetch user list from backend REST API on mount 
+  // Fetch user list from backend REST API on mount
   try {
     const response = await axios.get('http://localhost:5001/api/user/all')
     users.value = (response.data as User[]).map(normalizeUser)
@@ -181,28 +186,29 @@ onMounted(async () => {
   }
 
   // Set up event handlers
-chatService.onReceiveMessage = (message: ChatMessageDto) => {
-  console.log('Received message:', message)
+  chatService.onReceiveMessage = (message: Message) => {
+    console.log('Received message:', message)
 
-  if (message.Type !== 'chat') {
-    return
+    if (message.Type !== 'chat') {
+      return
+    }
+
+    const chatId = message.SenderId === currentUser.value.id ? message.ReceiverId : message.SenderId
+    const chatMessage = mapMessageUI(message)
+    appendMessageToConversation(chatId, chatMessage)
   }
-
-  const chatId = message.SenderId === currentUser.value.id ? message.ReceiverId : message.SenderId
-  const chatMessage = mapMessageUI(message)
-  appendMessageToConversation(chatId, chatMessage)
-}
 
   chatService.onUserListUpdated = (updatedUsers: User[]) => {
     const normalizedUsers = updatedUsers.map(normalizeUser)
     syncCurrentUserId(normalizedUsers)
-    users.value = normalizedUsers.filter(user => user.Id && user.Id !== currentUser.value.id)
-    if (!activeChatId.value || !users.value.some(user => user.Id === activeChatId.value)) {
+    users.value = normalizedUsers.filter((user) => user.Id && user.Id !== currentUser.value.id)
+    if (!activeChatId.value || !users.value.some((user) => user.Id === activeChatId.value)) {
       activeChatId.value = users.value[0]?.Id || null
     }
   }
 
-  chatService.onTyping = (typingEvent: ChatMessageDto) => {
+  // Handle typing indicators
+  chatService.onTyping = (typingEvent: Message) => {
     const normalizedTypingEvent = normalizeMessage(typingEvent)
     console.log('Typing event:', normalizedTypingEvent)
     const updatedTypingUsers = new Set(typingUsers.value)
@@ -226,7 +232,9 @@ chatService.onReceiveMessage = (message: ChatMessageDto) => {
     console.log('User connected:', normalizedUser)
 
     const normalizedCurrentName = currentUser.value.name.trim().toLowerCase()
-    const normalizedIncomingName = (normalizedUser.UserName || normalizedUser.DisplayName || '').trim().toLowerCase()
+    const normalizedIncomingName = (normalizedUser.UserName || normalizedUser.DisplayName || '')
+      .trim()
+      .toLowerCase()
 
     if (normalizedIncomingName && normalizedIncomingName === normalizedCurrentName) {
       syncCurrentUserId([normalizedUser])
@@ -237,7 +245,7 @@ chatService.onReceiveMessage = (message: ChatMessageDto) => {
       return
     }
 
-    users.value = users.value.filter(u => u.Id !== normalizedUser.Id)
+    users.value = users.value.filter((u) => u.Id !== normalizedUser.Id)
     users.value.push(normalizedUser)
     if (!activeChatId.value) {
       activeChatId.value = normalizedUser.Id || ''
@@ -246,7 +254,11 @@ chatService.onReceiveMessage = (message: ChatMessageDto) => {
 
   console.log('Connecting to chat...')
   try {
-    await chatService.connect({ Id: currentUser.value.id, UserName: currentUser.value.name, ChatRoom: 'general' })
+    await chatService.connect({
+      Id: currentUser.value.id,
+      UserName: currentUser.value.name,
+      ChatRoom: 'general',
+    })
     console.log('Connected successfully')
 
     if (activeChatId.value) {
@@ -270,20 +282,29 @@ onUnmounted(() => {
 })
 
 const sidebarItems = computed(() => {
-  console.log('Computing sidebar items with users:', users.value, 'activeChatId:', activeChatId.value)
-  return users.value.map(user => ({
+  console.log(
+    'Computing sidebar items with users:',
+    users.value,
+    'activeChatId:',
+    activeChatId.value,
+  )
+  return users.value.map((user) => ({
     id: user.Id,
     type: 'card',
     userName: user.UserName || 'Unknown user',
     status: user.Status || 'offline',
     clickable: true,
-    selected: user.Id === activeChatId.value
+    selected: user.Id === activeChatId.value,
   }))
 })
 
-const activeChat = computed(() => users.value.find(u => u.Id === activeChatId.value))
-const activeMessages = computed(() => activeChatId.value ? messages.value[activeChatId.value] || [] : [])
-const isTyping = computed(() => Boolean(activeChatId.value && typingUsers.value.has(activeChatId.value)))
+const activeChat = computed(() => users.value.find((u) => u.Id === activeChatId.value))
+const activeMessages = computed(() =>
+  activeChatId.value ? messages.value[activeChatId.value] || [] : [],
+)
+const isTyping = computed(() =>
+  Boolean(activeChatId.value && typingUsers.value.has(activeChatId.value)),
+)
 
 const handleSidebarItemClick = (item: any) => {
   if (item.type === 'card' && item.id) {
@@ -291,7 +312,7 @@ const handleSidebarItemClick = (item: any) => {
   } else if (item.type === 'button' && item.data?.action === 'new-chat') {
     // Handle new chat
     console.log('New chat clicked')
-    // For now, just alert
+    // // For now, just alert
     alert('New chat functionality not implemented yet')
   }
 }
@@ -310,16 +331,17 @@ const sendMessage = async () => {
   }
 
   if (!isValidUserId(currentUser.value.id)) {
-    connectError.value = 'Your user session is still connecting. Please wait a moment and try again.'
+    connectError.value =
+      'Your user session is still connecting. Please wait a moment and try again.'
     return
   }
 
   console.log(currentUser.value)
-  const message: ChatMessageDto = {
+  const message: Message = {
     Type: 'chat',
     SenderId: currentUser.value.id,
     ReceiverId: activeChatId.value,
-    Data: trimmed
+    Data: trimmed,
   }
 
   try {
@@ -338,21 +360,21 @@ let typingTimeout: number | null = null
 const handleInput = () => {
   if (!activeChatId.value || !isValidUserId(currentUser.value.id)) return
 
-  const typingEvent: ChatMessageDto = {
+  const typingEvent: Message = {
     Type: 'typing',
     SenderId: currentUser.value.id,
     ReceiverId: activeChatId.value as string,
-    Data: 'true'
+    Data: 'true',
   }
   chatService.sendTyping(typingEvent)
 
   if (typingTimeout) clearTimeout(typingTimeout)
   typingTimeout = window.setTimeout(() => {
-    const stopTypingEvent: ChatMessageDto = {
+    const stopTypingEvent: Message = {
       Type: 'typing',
       SenderId: currentUser.value.id,
       ReceiverId: activeChatId.value as string,
-      Data: 'false'
+      Data: 'false',
     }
     chatService.sendTyping(stopTypingEvent)
   }, 1000)
@@ -369,19 +391,19 @@ const handleLogout = async () => {
     console.error('Logout error:', error)
   }
 }
-
-
-
-
-
-
 </script>
 
 <template>
   <div class="app">
     <TopBar title="Dirs21 Chat" showMenuButton :sticky="true" @menuClick="handleMenuClick">
       <template #actions>
-        <Button text="Log out" class="text-red-500" variant="outline" size="sm" @click="handleLogout" />
+        <Button
+          text="Log out"
+          class="logout-button"
+          variant="outline"
+          size="sm"
+          @click="handleLogout"
+        />
       </template>
     </TopBar>
 
@@ -398,14 +420,21 @@ const handleLogout = async () => {
         @itemClick="handleSidebarItemClick"
       />
 
-
       <main class="chat-panel">
         <section class="chat-header">
           <div class="chat-contact-info">
             <div class="chat-avatar">👤</div>
             <div>
               <h2>{{ activeChat?.UserName || 'Select a chat' }}</h2>
-              <p>{{ activeChat ? (activeChat.Status === 'online' ? 'Online' : 'Offline') : 'Choose a conversation from the left' }}</p>
+              <p>
+                {{
+                  activeChat
+                    ? activeChat.Status === 'online'
+                      ? 'Online'
+                      : 'Offline'
+                    : 'Choose a conversation from the left'
+                }}
+              </p>
             </div>
           </div>
         </section>
@@ -425,7 +454,12 @@ const handleLogout = async () => {
         </section>
 
         <section class="chat-input-row">
-          <InputField v-model="messageText" placeholder="Type a message..." @enter="sendMessage" @input="handleInput" />
+          <InputField
+            v-model="messageText"
+            placeholder="Type a message..."
+            @enter="sendMessage"
+            @input="handleInput"
+          />
           <Button text="Send" variant="primary" size="md" @click="sendMessage" />
         </section>
       </main>
@@ -439,7 +473,7 @@ const handleLogout = async () => {
   flex-direction: column;
   min-height: 100vh;
   height: 100dvh;
-  background: #f3f4f6;
+  background: linear-gradient(135deg, #f4f8ff 0%, #e8f1ff 100%);
   overflow: hidden;
 }
 
@@ -499,6 +533,14 @@ const handleLogout = async () => {
   margin: 0.25rem 0 0;
   color: #6b7280;
   font-size: 0.95rem;
+}
+
+.logout-button {
+  color: #e34949 !important;
+}
+
+.logout-button:hover {
+  color: #eb4b4b !important;
 }
 
 .chat-body {
