@@ -30,7 +30,7 @@ public class ChatController : ControllerBase
 
         var createMessage = new Message
         {
-            Type = "text",
+            Type = "chat",
             SenderId = senderId,
             ReceiverId = receiverId,
             Timestamp = DateTime.Now,
@@ -39,6 +39,8 @@ public class ChatController : ControllerBase
 
         sender.Messages ??= new List<Message>();
         receiver.Messages ??= new List<Message>();
+
+        sender.Messages.Add(createMessage);
 
         if (senderId != receiverId)
         {

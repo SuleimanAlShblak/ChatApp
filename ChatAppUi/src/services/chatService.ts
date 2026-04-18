@@ -28,6 +28,8 @@ export interface ChatMessageDto {
   SenderId: string;
   ReceiverId: string;
   Data: string;
+  Timestamp?: string;
+  timestamp?: string;
 }
 
 export interface StoredChatMessage extends ChatMessageDto {
@@ -52,6 +54,8 @@ export const normalizeMessage = (message: any): ChatMessageDto => ({
   SenderId: message.SenderId ?? message.senderId ?? '',
   ReceiverId: message.ReceiverId ?? message.receiverId ?? '',
   Data: message.Data ?? message.data ?? '',
+  Timestamp: message.Timestamp ?? message.timestamp,
+  timestamp: message.timestamp ?? message.Timestamp,
 });
 
 const normalizeStatus = (status: unknown): string => {
@@ -158,16 +162,18 @@ class ChatService {
       encodeURIComponent(normalizedMessage.Data)
     );
 
-    if (this.connection) {
-      console.log('ChatService: Invoking SendMessage');
-      await this.connection.invoke('SendMessage', normalizedMessage);
-    }
-
-    return {
+    const savedMessage: StoredChatMessage = {
       ...normalizedMessage,
       ...(response.data ?? {}),
       Timestamp: response.data?.Timestamp ?? response.data?.timestamp ?? new Date().toISOString(),
-    } as StoredChatMessage;
+    };
+
+    if (this.connection) {
+      console.log('ChatService: Invoking SendMessage');
+      await this.connection.invoke('SendMessage', savedMessage);
+    }
+
+    return savedMessage;
   }
 
   async sendTyping(typingEvent: ChatMessageDto): Promise<void> {
