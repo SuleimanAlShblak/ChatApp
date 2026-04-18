@@ -1,24 +1,27 @@
 <template>
   <div class="login-container">
     <div class="login-card">
-      <h1>ChatApp Login</h1>
+      <h1>Chat App Login</h1>
       <form @submit.prevent="handleLogin" class="login-form">
         <div class="form-group">
-          <label for="username">Username</label>
-          <input
-            id="username"
+          <InputField
+            input-id="username"
             v-model="username"
             type="text"
-            required
+            label="Username"
+            :required="true"
+            :disabled="loading"
             placeholder="Enter your username"
             class="form-input"
           />
         </div>
-        <button type="submit" :disabled="loading" class="login-btn">
-          {{ loading ? 'Logging in...' : 'Login' }}
-        </button>
+        <Button
+          :text="loading ? 'Logging in...' : 'Login'"
+          :disabled="loading"
+          class="login-btn"
+        />
       </form>
-      <p v-if="message" class="message">{{ message }}</p>
+      <p v-if="message" :class="['message', `message--${messageType}`]">{{ message }}</p>
     </div>
   </div>
 </template>
@@ -27,11 +30,14 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import Button from '../componets/Button.vue'
+import InputField from '../componets/InputField.vue'
 
 const router = useRouter()
 const username = ref('')
 const loading = ref(false)
 const message = ref('')
+const messageType = ref<'success' | 'error'>('success')
 
 // Check if user is already logged in
 const checkLoggedIn = () => {
@@ -54,11 +60,13 @@ const handleLogin = async () => {
 
   loading.value = true
   message.value = ''
+  messageType.value = 'success'
 
   try {
     const response = await axios.post(`http://localhost:5001/api/user/login/${encodeURIComponent(username.value)}`)
     const data = response.data
     message.value = data.message
+    messageType.value = 'success'
 
     // Save session to localStorage
     localStorage.setItem('chatUserId', data.userId)
@@ -71,6 +79,7 @@ const handleLogin = async () => {
     })
   } catch (error) {
     console.error('Login error:', error)
+    messageType.value = 'error'
     message.value = 'Login failed. Please try again.'
   } finally {
     loading.value = false
@@ -84,21 +93,22 @@ const handleLogin = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #f4f8ff 0%, #e8f1ff 100%);
 }
 
 .login-card {
-  background: white;
+  background: #ffffff;
   padding: 2rem;
   border-radius: 10px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px rgba(59, 130, 246, 0.12);
+  border: 1px solid #dbeafe;
   width: 100%;
   max-width: 400px;
 }
 
 h1 {
   margin-bottom: 1.5rem;
-  color: #333;
+  color: #000000;
   font-size: 2rem;
 }
 
@@ -130,11 +140,11 @@ label {
 
 .form-input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #60a5fa;
 }
 
 .login-btn {
-  background: #667eea;
+  background: #294be6;
   color: white;
   padding: 0.75rem;
   border: none;
@@ -146,12 +156,22 @@ label {
 }
 
 .login-btn:hover:not(:disabled) {
-  background: #5a6fd8;
+  background: #ffffff;
+  color: #000000;
+  border: 1px solid #667eea;
 }
 
 .login-btn:disabled {
   background: #ccc;
+  color: white;
+  border: none;
   cursor: not-allowed;
+}
+
+.login-btn:disabled:hover {
+  background: #ccc;
+  color: white;
+  border: none;
 }
 
 .message {
@@ -161,9 +181,15 @@ label {
   font-weight: 500;
 }
 
-.message {
+.message--success {
   background: #d4edda;
   color: #155724;
   border: 1px solid #c3e6cb;
+}
+
+.message--error {
+  background: #f8d7da;
+  color: #842029;
+  border: 1px solid #f5c2c7;
 }
 </style>

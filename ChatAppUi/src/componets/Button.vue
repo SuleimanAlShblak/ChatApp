@@ -76,7 +76,7 @@ const handleClick = () => {
 
 /* Variants */
 .button--primary {
-  background-color: #3b82f6;
+  background-color: #294be6;
   color: white;
   border-color: #3b82f6;
 }
@@ -101,6 +101,16 @@ const handleClick = () => {
   background-color: white;
   color: #374151;
   border-color: #d1d5db;
+}
+
+.button--outline.text-red-600 {
+  color: #dc2626;
+}
+
+.button--outline.text-red-600:hover:not(.button--disabled) {
+  color: #b91c1c;
+  background-color: #fef2f2;
+  border-color: #fca5a5;
 }
 
 .button--outline:hover:not(.button--disabled) {

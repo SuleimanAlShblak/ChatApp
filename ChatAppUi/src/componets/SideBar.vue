@@ -1,8 +1,8 @@
 <template>
   <div class="sidebar" :class="sidebarClass" :style="sidebarStyle">
     <div v-if="title" class="sidebar-header">
-      <h2 class="sidebar-title">{{ title }}</h2>
-      <button
+      <!-- <h2 class="sidebar-title">{{ title }}</h2> -->
+      <!-- <button
         v-if="collapsible"
         class="sidebar-toggle"
         @click="toggleCollapsed"
@@ -22,7 +22,7 @@
             d="M15 19l-7-7 7-7"
           />
         </svg>
-      </button>
+      </button> -->
     </div>
 
     <div v-show="!isCollapsed" class="sidebar-content">

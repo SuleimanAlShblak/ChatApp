@@ -5,6 +5,7 @@ import SideBar from './componets/SideBar.vue'
 import Button from './componets/Button.vue'
 import InputField from './componets/InputField.vue'
 import MessageBubble from './componets/MessageBubble.vue'
+import TypingIndicator from './componets/TypingIndicator.vue'
 import chatService, { normalizeMessage, normalizeUser, type ChatMessageDto, type StoredChatMessage, type User } from './services/chatService'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
@@ -182,10 +183,9 @@ onMounted(async () => {
   // Set up event handlers
 chatService.onReceiveMessage = (message: ChatMessageDto) => {
   console.log('Received message:', message)
-  if (message.Type === 'chat' || message.Type === 'error' || message.Type === 'typing') {
-    if (message.Type !== 'chat') {
-      return
-    }
+
+  if (message.Type !== 'chat') {
+    return
   }
 
   const chatId = message.SenderId === currentUser.value.id ? message.ReceiverId : message.SenderId
@@ -203,18 +203,22 @@ chatService.onReceiveMessage = (message: ChatMessageDto) => {
   }
 
   chatService.onTyping = (typingEvent: ChatMessageDto) => {
-    console.log('Typing event:', typingEvent)
-    if (typingEvent.Data === 'true') {
-      typingUsers.value.add(typingEvent.SenderId)
-    } else {
-      typingUsers.value.delete(typingEvent.SenderId)
+    const normalizedTypingEvent = normalizeMessage(typingEvent)
+    console.log('Typing event:', normalizedTypingEvent)
+    const updatedTypingUsers = new Set(typingUsers.value)
+
+    if (normalizedTypingEvent.Data === 'true' && normalizedTypingEvent.SenderId) {
+      updatedTypingUsers.add(normalizedTypingEvent.SenderId)
+    } else if (normalizedTypingEvent.SenderId) {
+      updatedTypingUsers.delete(normalizedTypingEvent.SenderId)
     }
+
+    typingUsers.value = updatedTypingUsers
   }
 
   chatService.onReceiveError = (error: string) => {
     console.error('Received error:', error)
     connectError.value = error
-    alert(`Error: ${error}`)
   }
 
   chatService.onUserConnected = (user: User) => {
@@ -279,7 +283,7 @@ const sidebarItems = computed(() => {
 
 const activeChat = computed(() => users.value.find(u => u.Id === activeChatId.value))
 const activeMessages = computed(() => activeChatId.value ? messages.value[activeChatId.value] || [] : [])
-const isTyping = computed(() => activeChatId.value && typingUsers.value.has(activeChatId.value))
+const isTyping = computed(() => Boolean(activeChatId.value && typingUsers.value.has(activeChatId.value)))
 
 const handleSidebarItemClick = (item: any) => {
   if (item.type === 'card' && item.id) {
@@ -320,9 +324,7 @@ const sendMessage = async () => {
 
   try {
     console.log('sending message:', message)
-    const savedMessage = await chatService.sendMessage(message)
-    const localBubble = mapMessageUI(savedMessage)
-    appendMessageToConversation(activeChatId.value, localBubble)
+    await chatService.sendMessage(message)
     messageText.value = ''
     connectError.value = ''
   } catch (error) {
@@ -368,13 +370,18 @@ const handleLogout = async () => {
   }
 }
 
+
+
+
+
+
 </script>
 
 <template>
   <div class="app">
     <TopBar title="Dirs21 Chat" showMenuButton :sticky="true" @menuClick="handleMenuClick">
       <template #actions>
-        <Button text="Logout" variant="outline" size="sm" @click="handleLogout" />
+        <Button text="Log out" class="text-red-500" variant="outline" size="sm" @click="handleLogout" />
       </template>
     </TopBar>
 
@@ -401,7 +408,6 @@ const handleLogout = async () => {
               <p>{{ activeChat ? (activeChat.Status === 'online' ? 'Online' : 'Offline') : 'Choose a conversation from the left' }}</p>
             </div>
           </div>
-          <Button text="Info" variant="ghost" size="sm" />
         </section>
 
         <section class="chat-body">
@@ -415,9 +421,7 @@ const handleLogout = async () => {
               :isOwn="message.isOwn"
             />
           </div>
-          <div v-if="isTyping" class="typing-indicator">
-            {{ activeChat?.UserName }} is typing...
-          </div>
+          <TypingIndicator v-if="isTyping && activeChat" :name="activeChat.UserName || 'Someone'" />
         </section>
 
         <section class="chat-input-row">
@@ -434,12 +438,15 @@ const handleLogout = async () => {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  height: 100dvh;
   background: #f3f4f6;
+  overflow: hidden;
 }
 
 .app-content {
   display: flex;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -447,6 +454,9 @@ const handleLogout = async () => {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
   background: #f8fafc;
   overflow: hidden;
 }
@@ -459,6 +469,7 @@ const handleLogout = async () => {
   padding: 1.5rem;
   border-bottom: 1px solid #e5e7eb;
   background: white;
+  flex-shrink: 0;
 }
 
 .chat-contact-info {
@@ -492,8 +503,10 @@ const handleLogout = async () => {
 
 .chat-body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 1.5rem;
+  overscroll-behavior: contain;
 }
 
 .message-list {
@@ -504,15 +517,24 @@ const handleLogout = async () => {
 
 .chat-input-row {
   display: flex;
-  gap: 0.75rem;
   align-items: center;
+  gap: 0.75rem;
   padding: 1rem 1.5rem 1.5rem;
   background: white;
   border-top: 1px solid #e5e7eb;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+.chat-input-row .input-field-container {
+  flex: 1;
+  min-width: 0;
 }
 
 .chat-input-row .input-field {
-  flex: 1;
+  width: 100%;
 }
 
 @media (max-width: 900px) {
@@ -520,8 +542,59 @@ const handleLogout = async () => {
     flex-direction: column;
   }
 
+  .sidebar {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: 220px;
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
   .chat-panel {
     min-height: 0;
+  }
+
+  .chat-header,
+  .chat-body {
+    padding: 1rem;
+  }
+
+  .chat-input-row {
+    padding: 0.75rem 1rem 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .chat-contact-info {
+    gap: 0.75rem;
+  }
+
+  .chat-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+  }
+
+  .chat-header h2 {
+    font-size: 1rem;
+  }
+
+  .chat-header p {
+    font-size: 0.85rem;
+  }
+
+  .chat-input-row {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .chat-input-row .input-field-container,
+  .chat-input-row .button {
+    width: 100%;
   }
 }
 
