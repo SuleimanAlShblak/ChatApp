@@ -1,5 +1,7 @@
-﻿using ChatAppApi.Models;
+﻿using ChatAppApi.Hubs;
+using ChatAppApi.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace ChatAppApi.Controllers;
 
@@ -8,63 +10,59 @@ namespace ChatAppApi.Controllers;
 public class UserController : ControllerBase
 {
     private readonly DataService.DataService _dataService;
-
-    public UserController(DataService.DataService dataService)
+    private readonly IHubContext<ChatHub> _hubContext;
+    public UserController(DataService.DataService dataService, IHubContext<ChatHub> hubContext)
     {
         _dataService = dataService;
+        _hubContext = hubContext;
     }
 
 
     [HttpPost("login/{userName}")]
     public IActionResult Login(string userName)
     {
-        var users = GetUsers();
-        foreach (var user in users)
+        var existingUser = _dataService.users.Values.FirstOrDefault(u => u.UserName == userName);
+        if (existingUser != null)
         {
-            if (user.UserName == userName)
-            {
-                return Ok(new { message = "User exists", userId = user.Id });
-            }
+            return Ok(new { message = "User exists", userId = existingUser.Id });
         }
-        //var userId = Guid.NewGuid().ToString();
-        //var userCreate = new Models.User
-        //{
-        //    Id = userId,
-        //    UserName = userName,
-        //    DisplayName = userName,
-        //    Status = "online"
-        //};
 
-        //_dataService.users[userId] = userCreate;
-        return Ok(new { message = "User added"/*, userId = /*userId*/});
+        var userId = Guid.NewGuid().ToString();
+        var newUser = new Models.User
+        {
+            Id = userId,
+            UserName = userName,
+            DisplayName = userName,
+            Status = Status.Offline
+        };
+
+        _dataService.users[userId] = newUser;
+        return Ok(new { message = "User added", userId = userId });
 
     }
 
     [HttpPost("logout/{userId}")]
-    public string Logout(string userId)
+    public async Task<IActionResult> Logout(string userId)
     {
-        var users = GetUsers();
-        foreach (var user in users)
+        if (!_dataService.users.TryGetValue(userId, out var user))
         {
-            if (user.Status == Status.Online && user.Id == userId)
-            {
-                var userUpdate = new User
-                {
-                    Id = userId,
-                    UserName = user.UserName,
-                    DisplayName = user.DisplayName,
-                    Status = Status.Offline
-                };
-                _dataService.users[userId] = userUpdate;
-                return "User logged out";
-            }
-            else if (user.Status == Status.Offline && user.Id == userId)
-            {
-                return "User already logged out";
-            }
+            return NotFound("User ID not found");
         }
-        return "User ID not found";
+
+        if (user.Status == Status.Online)
+        {
+            return Ok("User logged out successfully");
+        }
+
+        user.Status = Status.Offline;
+        user.ConnectionId = null;
+
+        await _hubContext.Clients.All.SendAsync("UserListUpdated", _dataService.users.Values.ToList());
+
+        return Ok("User logged out");
+
     }
+
 
     [HttpGet("all")]
     public List<User> GetAllUsers()

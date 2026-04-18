@@ -24,28 +24,38 @@ public class ChatHub : Hub
             user.ChatRoom = "general";
         }
 
-        var userId = Guid.NewGuid().ToString();
+        var existingUser = _dataService.users.Values.FirstOrDefault(u => u.UserName == user.UserName);
+        string userId;
 
-        var dataServiceConnection = new User
+        if (existingUser != null)
         {
-            SenderId = userId,
-            ReceiverId = userId,
-            Id = userId,
-            UserName = user.UserName,
-            ChatRoom = user.ChatRoom,
-            Status = Status.Online
+            userId = existingUser.Id!;
+            existingUser.Status = Status.Online;
+            existingUser.ConnectionId = Context.ConnectionId;
+            existingUser.ChatRoom = user.ChatRoom;
+        }
+        else
+        {
+            userId = Guid.NewGuid().ToString();
+            var dataServiceConnection = new User
+            {
+                SenderId = userId,
+                ReceiverId = userId,
+                Id = userId,
+                UserName = user.UserName,
+                ChatRoom = user.ChatRoom,
+                Status = Status.Online
 
-        };
-        _dataService.users[userId] = dataServiceConnection;
-
-        var connectedUsersKey = user.Id ?? user.UserName ?? Context.ConnectionId;
-
+            };
+            _dataService.users[userId] = dataServiceConnection;
+        }
         await Groups.AddToGroupAsync(Context.ConnectionId, user.ChatRoom);
 
-        await Clients.All.SendAsync("UserConnected", dataServiceConnection);
+        await Clients.All.SendAsync("UserConnected", _dataService.users[userId]);
         await Clients.All.SendAsync("UserListUpdated", _dataService.users.Values.ToList());
-        Console.WriteLine($"User connected: {user.UserName} (ID: {user.Id}) in ChatRoom: {user.ChatRoom}");
+        Console.WriteLine($"User connected: {user.UserName} (ID: {userId}) in ChatRoom: {user.ChatRoom}");
     }
+
 
     /// <summary>
     /// 
@@ -64,8 +74,9 @@ public class ChatHub : Hub
         //    await Clients.Caller.SendAsync("ReceiveError", "Receiver not found");
         //    return;
         //}
+        var user = _dataService.users.Values.FirstOrDefault(u => u.ConnectionId == Context.ConnectionId);
 
-        if (_dataService.users.TryGetValue(Context.ConnectionId, out User user))
+        if (user != null)
         {
             if (string.IsNullOrEmpty(user.ChatRoom))
             {
@@ -80,13 +91,21 @@ public class ChatHub : Hub
     /// <summary>
     /// 
     /// </summary>
-    public async Task Typing(Message typingEvent, User user)
+    public async Task OnTyping(Message typingEvent)
     {
         var receiver = _dataService.users.Values.FirstOrDefault(u => u.Id == typingEvent.ReceiverId);
         if (receiver != null && !string.IsNullOrEmpty(receiver.SenderId))
         {
             await Clients.Client(receiver.SenderId).SendAsync("Typing", typingEvent);
-            user.isTyping = typingEvent.Type == "typing";
+        }
+    }
+
+    public async Task OnStopTyping(Message typingEvent)
+    {
+        var receiver = _dataService.users.Values.FirstOrDefault(u => u.Id == typingEvent.ReceiverId);
+        if (receiver != null && !string.IsNullOrEmpty(receiver.SenderId))
+        {
+            await Clients.Client(receiver.SenderId).SendAsync("StopTyping", typingEvent);
         }
     }
 
@@ -98,11 +117,11 @@ public class ChatHub : Hub
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        var user = _dataService.users.FirstOrDefault(u => u.Value.SenderId == Context.ConnectionId);
-        if (user.Key != null)
+        var user = _dataService.users.Values.FirstOrDefault(u => u.ConnectionId == Context.ConnectionId);
+        if (user != null)
         {
-            _dataService.users.TryRemove(user.Key, out _);
-
+            user.Status = Status.Offline;
+            user.ConnectionId = null;
             await Clients.All.SendAsync("UserListUpdated", _dataService.users.Values.ToList());
         }
         Console.WriteLine($"Client disconnected: {Context.ConnectionId}");
@@ -118,5 +137,4 @@ public class ChatHub : Hub
                !string.IsNullOrEmpty(message.Data);
     }
 }
-
 
