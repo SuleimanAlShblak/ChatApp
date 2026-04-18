@@ -6,19 +6,14 @@ public class ChatHub : Hub
 {
     public const string HubUrl = "/Chat";
 
-    // In memory storage for users
-    //private static readonly Dictionary<string, UserState> ConnectedUsers = new();
-
     private readonly DataService.DataService _dataService;
     public ChatHub(DataService.DataService dataService) => _dataService = dataService;
 
     /// <summary>
-    /// 
+    /// Connects a user to the chat hub.
     /// </summary>
-    public async Task Connect(User user) //TODO: Separate of Concern
+    public async Task Connect(User user)
     {
-        //var connectionKey = Context.ConnectionId;
-
         if (string.IsNullOrEmpty(user.ChatRoom))
         {
             user.ChatRoom = "general";
@@ -59,7 +54,7 @@ public class ChatHub : Hub
 
 
     /// <summary>
-    /// 
+    /// Sends a message from the connected user to the specified receiver.
     /// </summary>
     public async Task SendMessage(Message message)
     {
@@ -70,11 +65,6 @@ public class ChatHub : Hub
             return;
         }
 
-        //if (!ConnectedUsers.TryGetValue(message.ReceiverId, out var receiverState))
-        //{
-        //    await Clients.Caller.SendAsync("ReceiveError", "Receiver not found");
-        //    return;
-        //}
         var user = _dataService.users.Values.FirstOrDefault(u => u.ConnectionId == Context.ConnectionId);
 
         if (user != null)
@@ -86,15 +76,14 @@ public class ChatHub : Hub
             await Clients.Group(user.ChatRoom).SendAsync("ReceiveSpecificMessage", message);
             Console.WriteLine($"Message from {message.SenderId} to {message.ReceiverId}: {message.Data}");
         }
-        //await Clients.Client(userConnection.ConnectionId).SendAsync("ReceiveMessage", userConnection);
     }
 
     /// <summary>
-    /// 
+    /// Notifies the receiver that the sender is typing.
     /// </summary>
     public async Task Typing(Message typingEvent)
     {
-        if (typingEvent is null || string.IsNullOrEmpty(typingEvent.SenderId) || string.IsNullOrEmpty(typingEvent.ReceiverId))
+        if (typingEvent == null || string.IsNullOrEmpty(typingEvent.SenderId) || string.IsNullOrEmpty(typingEvent.ReceiverId))
         {
             await Clients.Caller.SendAsync("ReceiveError", "Invalid typing event");
             return;
@@ -109,7 +98,7 @@ public class ChatHub : Hub
 
     public async Task StopTyping(Message typingEvent)
     {
-        if (typingEvent is null || string.IsNullOrEmpty(typingEvent.SenderId) || string.IsNullOrEmpty(typingEvent.ReceiverId))
+        if (typingEvent == null || string.IsNullOrEmpty(typingEvent.SenderId) || string.IsNullOrEmpty(typingEvent.ReceiverId))
         {
             await Clients.Caller.SendAsync("ReceiveError", "Invalid typing event");
             return;
@@ -141,6 +130,9 @@ public class ChatHub : Hub
         await base.OnDisconnectedAsync(exception);
     }
 
+    /// <summary>
+    /// Validates the message format.
+    /// </summary>
     private bool IsValidMessage(Message message)
     {
         return !string.IsNullOrEmpty(message.Type) &&
@@ -150,4 +142,3 @@ public class ChatHub : Hub
                !string.IsNullOrEmpty(message.Data);
     }
 }
-

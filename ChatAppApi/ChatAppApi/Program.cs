@@ -4,7 +4,7 @@ using ChatAppApi.Hubs;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(); // Add SignalR services
 
 builder.Services.AddControllers();
 
@@ -31,7 +31,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-
+// Enable CORS
 app.UseCors("ChatAppPolicy");
 
 //app.UseAuthorization();

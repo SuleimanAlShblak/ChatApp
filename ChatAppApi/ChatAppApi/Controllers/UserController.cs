@@ -17,7 +17,9 @@ public class UserController : ControllerBase
         _hubContext = hubContext;
     }
 
-
+    /// <summary>
+    /// Logs in a user with the specified username.
+    /// </summary>
     [HttpPost("login/{userName}")]
     public IActionResult Login(string userName)
     {
@@ -41,6 +43,9 @@ public class UserController : ControllerBase
 
     }
 
+    /// <summary>
+    /// Logs out a user with the specified user ID.
+    /// </summary>
     [HttpPost("logout/{userId}")]
     public async Task<IActionResult> Logout(string userId)
     {

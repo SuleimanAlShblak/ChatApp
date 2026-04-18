@@ -14,16 +14,18 @@ public class ChatController : ControllerBase
         _dataService = dataService;
     }
 
-
+    /// <summary>
+    /// Sends a message from the specified sender to the specified receiver.
+    /// </summary>
     [HttpPost("message/{senderId}/{receiverId}/{content}")]
     public IActionResult SendMessage(string senderId, string receiverId, string content)
     {
-        if (!_dataService.users.TryGetValue(senderId, out var sender) || sender is null)
+        if (!_dataService.users.TryGetValue(senderId, out var sender) || sender == null)
         {
             return NotFound("Sender not found");
         }
 
-        if (!_dataService.users.TryGetValue(receiverId, out var receiver) || receiver is null)
+        if (!_dataService.users.TryGetValue(receiverId, out var receiver) || receiver == null)
         {
             return NotFound("Receiver not found");
         }
@@ -52,11 +54,13 @@ public class ChatController : ControllerBase
         return Ok(createMessage);
     }
 
-    // Request to get all messages for a user (Chat history)
+    /// <summary>
+    /// Retrieves the chat history between the specified user and their chat partner.
+    /// </summary>
     [HttpGet("history/{userId}/{chatPartnerId}")]
     public IActionResult GetMessages(string userId, string chatPartnerId)
     {
-        if (!_dataService.users.TryGetValue(userId, out var user) || user is null)
+        if (!_dataService.users.TryGetValue(userId, out var user) || user == null)
         {
             return NotFound("User not found");
         }
