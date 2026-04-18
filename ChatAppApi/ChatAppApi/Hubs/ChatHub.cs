@@ -61,7 +61,6 @@ public class ChatHub : Hub
         if (!IsValidMessage(message))
         {
             await Clients.Caller.SendAsync("ReceiveError", "Invalid message format");
-            Console.WriteLine(($"Message from {message.SenderId} to {message.ReceiverId}: {message.Data}"));
             return;
         }
 
@@ -73,6 +72,7 @@ public class ChatHub : Hub
             {
                 user.ChatRoom = "general";
             }
+
             await Clients.Group(user.ChatRoom).SendAsync("ReceiveSpecificMessage", message);
             Console.WriteLine($"Message from {message.SenderId} to {message.ReceiverId}: {message.Data}");
         }
@@ -135,7 +135,8 @@ public class ChatHub : Hub
     /// </summary>
     private bool IsValidMessage(Message message)
     {
-        return !string.IsNullOrEmpty(message.Type) &&
+        return message != null &&
+               !string.IsNullOrEmpty(message.Type) &&
                new[] { "connect", "chat", "typing", "error" }.Contains(message.Type) &&
                !string.IsNullOrEmpty(message.SenderId) &&
                !string.IsNullOrEmpty(message.ReceiverId) &&
