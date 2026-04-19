@@ -46,13 +46,14 @@ export const normalizeMessage = (message: any): Message => ({
   Timestamp: message.Timestamp ?? undefined,
 })
 
+
 const normalizeStatus = (status: unknown): string => {
   if (status === 0 || status === 'Online' || status === 'online') return 'online'
   if (status === 1 || status === 'Offline' || status === 'offline') return 'offline'
   return 'offline'
 }
 
-const hasValidValue = (value: string | null | undefined): value is string => {
+const hasValidValue = (value: string | null | undefined): value is string => { 
   return Boolean(value && value !== 'undefined' && value !== 'null')
 }
 

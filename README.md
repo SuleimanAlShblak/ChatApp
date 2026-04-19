@@ -118,7 +118,7 @@ I would like to add the following improvements:
 - The ability to delete messages after sending them
 - The ability to personalize user profiles
 - End-to-end UI tests
-- Docker container support
+- Docker container support (new Challenge)
 - Group chat support
 - General code improvements
 - UI/UX adjustments
