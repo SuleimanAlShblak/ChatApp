@@ -94,6 +94,7 @@ public class ChatHub : Hub
         var receiver = _dataService.users.Values.FirstOrDefault(u => u.Id == typingEvent.ReceiverId);
         if (receiver != null && !string.IsNullOrEmpty(receiver.ConnectionId))
         {
+            Log.Debug($"Typing event from {typingEvent.SenderId} to {typingEvent.ReceiverId}");
             await Clients.Client(receiver.ConnectionId).SendAsync("Typing", typingEvent);
         }
     }
@@ -109,6 +110,7 @@ public class ChatHub : Hub
         var receiver = _dataService.users.Values.FirstOrDefault(u => u.Id == typingEvent.ReceiverId);
         if (receiver != null && !string.IsNullOrEmpty(receiver.ConnectionId))
         {
+            Log.Debug($"Stop typing event from {typingEvent.SenderId} to {typingEvent.ReceiverId}");
             await Clients.Client(receiver.ConnectionId).SendAsync("Typing", typingEvent);
         }
     }
@@ -126,6 +128,7 @@ public class ChatHub : Hub
         {
             user.Status = Status.Offline;
             user.ConnectionId = null;
+            Log.Debug($"User disconnected: {user.UserName} (ID: {user.Id})");
             await Clients.All.SendAsync("UserListUpdated", _dataService.users.Values.ToList());
         }
         Log.Information($"Client disconnected: {Context.ConnectionId}");

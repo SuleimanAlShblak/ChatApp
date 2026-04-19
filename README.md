@@ -2,8 +2,8 @@
 
 ## Overview
 
-ChatApp is a web application based on **ASP .NET** for the backend and **Vue.js** for the frontend.
-It uses SignalR to enable instant communication between connected users and a Web API.
+ChatApp is a web application built with **ASP.NET** for the backend and **Vue.js** for the frontend.
+It uses SignalR and a Web API to enable instant communication between connected users.
 
 ## Core Features
 
@@ -18,31 +18,31 @@ It uses SignalR to enable instant communication between connected users and a We
 - Backend; ASP .NET Core Web API and SignalR
 - Frontend: vue.js and TypeScript
 
-## How to run
+## How to Run
 
 ### Backend
 
-To be able to run the Backend we need to do The Flow:
+To run the backend, follow these steps:
 
-1. Navigate to the solution Folder:
+1. Navigate to the solution folder
 
     ```sh
         cd ChatApp\ChatAppApi
     ```
 
-1. To build the Project run command:
+1. Build the Project
 
     ```sh
         dotnet build
     ```
 
-1. To run Test
+1. Run Test
 
     ```sh
         dotnet test
     ```
 
-1. To run the Server run the command
+1. Run Server
 
     ```sh
         cd ChatAppApi
@@ -51,21 +51,21 @@ To be able to run the Backend we need to do The Flow:
 
 ### Frontend
 
-To be able to run the Frontend we need to do The Flow:
+To run the frontend, follow these steps:
 
-1. Navigate to the Frontend project Folder:
+1. Navigate to the frontend project folder
 
     ```sh
         cd ChatAppUi
     ```
 
-1. To install the Project packages:
+1. Install the project packages:
 
     ```sh
         npm install
     ```
 
-1. To run the Project:
+1. Start the Project:
 
     ```sh
         npm run dev
@@ -73,7 +73,7 @@ To be able to run the Frontend we need to do The Flow:
 
 Visit <http://localhost:5176/> to view the application.
 
-**Please Note** that the Backend and the frontend are running on **different** Ports:
+**Please note** that the backend and frontend run on **different** ports:
 
 - Backend: `5001` and `7007`
 - Frontend: `5176`
@@ -92,7 +92,7 @@ The message format contains five properties defined in **ChatAppApi\Models\Messa
 
 Example:
 
-```JSON
+```json
 {
     "Type": "chat",
     "SenderId": "62fc6f0e-712b-4de7-a8c9-a338c9b67728",
@@ -102,20 +102,23 @@ Example:
 }
 ```
 
-## Real Time Flow
+## Real-Time Flow
 
-When a user connects to the chat hub via SignalR, the server updates and broadcasts a list of connected users.
-When a message is sent through the API, SignalR instantly delivers it to the recipients in real time. At the same time, typing activity is shared, allowing users to see when someone is typing.
+When a user connects to the chat hub via SignalR, the server updates and broadcasts the list of connected users.
+When a message is sent through the API, SignalR instantly delivers it to the recipient in real time. At the same time, typing activity is shared so users can see when someone is typing.
 
 ![SequenceDiagram](/assets/SequenceDiagram.png)  
 
-## What i would improve next
+## What I Would Improve Next
 
-- Add authentication and authorization
-- Add persistence Database
-- Add ability to delete Messages after sending it
-- Add ability to personal profile
-- Add End 2 End UI Tests
-- Support group chat
-- Code improvements
+I would like to add the following improvements:
+
+- Authentication and authorization
+- Persistent database storage
+- The ability to delete messages after sending them
+- The ability to personalize user profiles
+- End-to-end UI tests
+- Docker container support
+- Group chat support
+- General code improvements
 - UI/UX adjustments
