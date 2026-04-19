@@ -6,8 +6,8 @@ public class ChatHub : Hub
 {
     public const string HubUrl = "/Chat";
 
-    private readonly DataService.DataService _dataService;
-    public ChatHub(DataService.DataService dataService) => _dataService = dataService;
+    private readonly Services.DataService _dataService;
+    public ChatHub(Services.DataService dataService) => _dataService = dataService;
 
     /// <summary>
     /// Connects a user to the chat hub.

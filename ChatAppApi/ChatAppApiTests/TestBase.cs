@@ -1,4 +1,4 @@
-using ChatAppApi.DataService;
+using ChatAppApi.Services;
 using ChatAppApi.Hubs;
 using ChatAppApi.Models;
 using Microsoft.AspNetCore.SignalR;

@@ -9,9 +9,9 @@ namespace ChatAppApi.Controllers;
 [Route("api/[controller]")]
 public class UserController : ControllerBase
 {
-    private readonly DataService.DataService _dataService;
+    private readonly Services.DataService _dataService;
     private readonly IHubContext<ChatHub> _hubContext;
-    public UserController(DataService.DataService dataService, IHubContext<ChatHub> hubContext)
+    public UserController(Services.DataService dataService, IHubContext<ChatHub> hubContext)
     {
         _dataService = dataService;
         _hubContext = hubContext;

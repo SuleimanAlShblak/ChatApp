@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 
-namespace ChatAppApi.DataService;
+namespace ChatAppApi.Services;
 
 public class DataService
 {

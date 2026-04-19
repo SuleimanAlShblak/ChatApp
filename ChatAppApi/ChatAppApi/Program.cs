@@ -1,4 +1,4 @@
-using ChatAppApi.DataService;
+using ChatAppApi.Services;
 using ChatAppApi.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);

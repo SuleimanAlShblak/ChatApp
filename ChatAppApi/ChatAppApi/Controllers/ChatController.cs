@@ -7,9 +7,9 @@ namespace ChatAppApi.Controllers;
 [Route("api/[controller]")]
 public class ChatController : ControllerBase
 {
-    private readonly DataService.DataService _dataService;
+    private readonly Services.DataService _dataService;
 
-    public ChatController(DataService.DataService dataService)
+    public ChatController(Services.DataService dataService)
     {
         _dataService = dataService;
     }
