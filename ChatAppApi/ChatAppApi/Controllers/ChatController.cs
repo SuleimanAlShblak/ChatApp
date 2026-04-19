@@ -20,6 +20,13 @@ public class ChatController : ControllerBase
     [HttpPost("message/{senderId}/{receiverId}/{content}")]
     public IActionResult SendMessage(string senderId, string receiverId, string content)
     {
+        if (string.IsNullOrWhiteSpace(senderId)
+            || string.IsNullOrWhiteSpace(receiverId)
+            || string.IsNullOrWhiteSpace(receiverId))
+        {
+            return BadRequest("Invalid message format");
+        }
+
         if (!_dataService.users.TryGetValue(senderId, out var sender) || sender == null)
         {
             return NotFound("Sender not found");

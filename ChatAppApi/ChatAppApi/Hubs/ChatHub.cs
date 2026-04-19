@@ -1,4 +1,5 @@
-﻿using ChatAppApi.Models;
+﻿using ChatAppApi.Helpers;
+using ChatAppApi.Models;
 using Microsoft.AspNetCore.SignalR;
 namespace ChatAppApi.Hubs;
 
@@ -58,7 +59,7 @@ public class ChatHub : Hub
     /// </summary>
     public async Task SendMessage(Message message)
     {
-        if (!IsValidMessage(message))
+        if (!ValidationHelper.IsValidMessage(message))
         {
             await Clients.Caller.SendAsync("ReceiveError", "Invalid message format");
             return;
@@ -128,18 +129,5 @@ public class ChatHub : Hub
         }
         Console.WriteLine($"Client disconnected: {Context.ConnectionId}");
         await base.OnDisconnectedAsync(exception);
-    }
-
-    /// <summary>
-    /// Validates the message format.
-    /// </summary>
-    private bool IsValidMessage(Message message)
-    {
-        return message != null &&
-               !string.IsNullOrEmpty(message.Type) &&
-               new[] { "connect", "chat", "typing", "error" }.Contains(message.Type) &&
-               !string.IsNullOrEmpty(message.SenderId) &&
-               !string.IsNullOrEmpty(message.ReceiverId) &&
-               !string.IsNullOrEmpty(message.Data);
     }
 }

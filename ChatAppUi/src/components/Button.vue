@@ -1,11 +1,3 @@
-<template>
-  <button class="button" :class="buttonClass" :disabled="disabled" @click="handleClick">
-    <component v-if="icon && isIcon" :is="icon" class="button-icon" />
-    <span v-if="text && !isIcon">{{ text }}</span>
-    <slot v-if="!text && !isIcon" />
-  </button>
-</template>
-
 <script setup lang="ts">
 import { computed } from 'vue'
 
@@ -54,6 +46,14 @@ const handleClick = () => {
   }
 }
 </script>
+
+<template>
+  <button class="button" :class="buttonClass" :disabled="disabled" @click="handleClick">
+    <component v-if="icon && isIcon" :is="icon" class="button-icon" />
+    <span v-if="text && !isIcon">{{ text }}</span>
+    <slot v-if="!text && !isIcon" />
+  </button>
+</template>
 
 <style scoped>
 .button {

@@ -141,18 +141,6 @@ label {
   border-color: #60a5fa;
 }
 
-.login-btn {
-  background: #294be6;
-  color: white;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 5px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.3s;
-  margin-top: 1rem;
-}
-
 .login-btn:hover:not(:disabled) {
   background: #ffffff;
   color: #000000;
@@ -178,13 +166,6 @@ label {
   border-radius: 5px;
   font-weight: 500;
 }
-
-.message--success {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
-
 .message--error {
   background: #f8d7da;
   color: #842029;
