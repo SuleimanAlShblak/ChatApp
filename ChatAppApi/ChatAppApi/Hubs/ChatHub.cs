@@ -1,6 +1,7 @@
 ﻿using ChatAppApi.Helpers;
 using ChatAppApi.Models;
 using Microsoft.AspNetCore.SignalR;
+using Serilog;
 namespace ChatAppApi.Hubs;
 
 public class ChatHub : Hub
@@ -50,7 +51,7 @@ public class ChatHub : Hub
 
         await Clients.All.SendAsync("UserConnected", _dataService.users[userId]);
         await Clients.All.SendAsync("UserListUpdated", _dataService.users.Values.ToList());
-        Console.WriteLine($"User connected: {user.UserName} (ID: {userId}) in ChatRoom: {user.ChatRoom}");
+        Log.Information($"User connected: {user.UserName} (ID: {userId}) in ChatRoom: {user.ChatRoom}");
     }
 
 
@@ -75,7 +76,7 @@ public class ChatHub : Hub
             }
 
             await Clients.Group(user.ChatRoom).SendAsync("ReceiveSpecificMessage", message);
-            Console.WriteLine($"Message from {message.SenderId} to {message.ReceiverId}: {message.Data}");
+            Log.Debug($"Message from {message.SenderId} to {message.ReceiverId}: {message.Data}");
         }
     }
 
@@ -114,7 +115,7 @@ public class ChatHub : Hub
 
     public override async Task OnConnectedAsync()
     {
-        Console.WriteLine($"Client connected: {Context.ConnectionId}");
+        Log.Information($"Client connected: {Context.ConnectionId}");
         await base.OnConnectedAsync();
     }
 
@@ -127,7 +128,7 @@ public class ChatHub : Hub
             user.ConnectionId = null;
             await Clients.All.SendAsync("UserListUpdated", _dataService.users.Values.ToList());
         }
-        Console.WriteLine($"Client disconnected: {Context.ConnectionId}");
+        Log.Information($"Client disconnected: {Context.ConnectionId}");
         await base.OnDisconnectedAsync(exception);
     }
 }

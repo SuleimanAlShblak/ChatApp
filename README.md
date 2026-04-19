@@ -26,28 +26,28 @@ To be able to run the Backend we need to do The Flow:
 
 1. Navigate to the solution Folder:
 
-```sh
-cd ChatApp\ChatAppApi
-```
+    ```sh
+        cd ChatApp\ChatAppApi
+    ```
 
-2. To build the Project run command:
+1. To build the Project run command:
 
-```sh
-dotnet build
-```
+    ```sh
+        dotnet build
+    ```
 
-3. To run the Server run the command
+1. To run Test
 
-```sh
-cd ChatAppApi
-dotnet run
-```
+    ```sh
+        dotnet test
+    ```
 
-4. To run Test
+1. To run the Server run the command
 
-```sh
-dotnet test
-```
+    ```sh
+        cd ChatAppApi
+        dotnet run
+    ```
 
 ### Frontend
 
@@ -55,21 +55,21 @@ To be able to run the Frontend we need to do The Flow:
 
 1. Navigate to the Frontend project Folder:
 
-```sh
-cd ChatAppUi
-```
+    ```sh
+        cd ChatAppUi
+    ```
 
-2. To install the Project packages:
+1. To install the Project packages:
 
-```sh
-npm install
-```
+    ```sh
+        npm install
+    ```
 
-3. To run the Project:
+1. To run the Project:
 
-```sh
-npm run dev
-```
+    ```sh
+        npm run dev
+    ```
 
 Visit <http://localhost:5176/> to view the application.
 
@@ -82,13 +82,13 @@ Visit <http://localhost:5176/> to view the application.
 
 The message format contains five properties defined in **ChatAppApi\Models\Message.cs** as follows:
 
-| Format     | Description                                                                                                                   |
-| :--------- | :---------------------------------------------------------------------------------------------------------------------------- |
-| Type       | The Type property contains the type of the message, like "chat," "typing," or "error."                                        |
-| SenderId   | The SenderId property contains the `UserId` of the message sender  and identifies the user.                                   |
-| ReceiverId | The ReceiverId property contains the `UserId` of the message receiver, which is linked with the SenderId to send the message. |
-| Timestamp  | The Timestamp property contains `DateTime` of the message.                                                                    |
-| Data       | The Data property contains the message content.                                                                               |
+| Format       | Description                                                                                                                   |
+| :----------- | :---------------------------------------------------------------------------------------------------------------------------- |
+| `Type`       | The Type property contains the type of the message, like "chat," "typing," or "error."                                        |
+| `SenderId`   | The SenderId property contains the `UserId` of the message sender  and identifies the user.                                   |
+| `ReceiverId` | The ReceiverId property contains the `UserId` of the message receiver, which is linked with the SenderId to send the message. |
+| `Timestamp`  | The Timestamp property contains `DateTime` of the message.                                                                    |
+| `Data`       | The Data property contains the message content.                                                                               |
 
 Example:
 
@@ -107,6 +107,15 @@ Example:
 When a user connects to the chat hub via SignalR, the server updates and broadcasts a list of connected users.
 When a message is sent through the API, SignalR instantly delivers it to the recipients in real time. At the same time, typing activity is shared, allowing users to see when someone is typing.
 
-![](/assets/SequenceDiagram.png)  
+![SequenceDiagram](/assets/SequenceDiagram.png)  
 
 ## What i would improve next
+
+- Add authentication and authorization
+- Add persistence Database
+- Add ability to delete Messages after sending it
+- Add ability to personal profile
+- Add End 2 End UI Tests
+- Support group chat
+- Code improvements
+- UI/UX adjustments

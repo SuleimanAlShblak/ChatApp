@@ -1,5 +1,6 @@
-using ChatAppApi.Services;
 using ChatAppApi.Hubs;
+using ChatAppApi.Services;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +37,13 @@ builder.Services
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddSingleton<DataService>();
+
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug()
+    .WriteTo.Console()
+    .CreateLogger();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
