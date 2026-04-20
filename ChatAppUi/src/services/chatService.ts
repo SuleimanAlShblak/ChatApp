@@ -26,19 +26,19 @@ export interface Message {
 export interface StoredChatMessage extends Message {
   Timestamp?: string
 }
-
+// Normalization functions
 export const normalizeUser = (user: User): User => ({
   Id: user.Id ?? '',
   UserName: user.UserName ?? user.DisplayName ?? '',
   DisplayName: user.DisplayName ?? user.UserName ?? '',
   Image: user.Image ?? '',
   Status: normalizeStatus(user.Status),
-  SenderId: user.SenderId ?? '', //ToDO: chcke this
+  SenderId: user.SenderId ?? '', 
   ReceiverId: user.ReceiverId ?? '',
   ChatRoom: user.ChatRoom ?? 'general',
 })
 
-export const normalizeMessage = (message: any): Message => ({
+export const normalizeMessage = (message: Message): Message => ({
   Type: message.Type ?? 'chat',
   SenderId: message.SenderId ?? '',
   ReceiverId: message.ReceiverId ?? '',

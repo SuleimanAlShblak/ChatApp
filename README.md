@@ -18,6 +18,11 @@ It uses SignalR and a Web API to enable instant communication between connected 
 - Backend; ASP .NET Core Web API and SignalR
 - Frontend: vue.js and TypeScript
 
+## Requirements
+
+- .NET 10 SDK for the backend
+- Node.js 20.19+ or 22.12+ for the frontend
+
 ## How to Run
 
 ### Backend
@@ -122,3 +127,7 @@ I would like to add the following improvements:
 - Group chat support
 - General code improvements
 - UI/UX adjustments
+
+## Development Time
+
+The project was developed over one weeks and took about 26 to 28 hours.

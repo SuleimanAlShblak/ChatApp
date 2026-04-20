@@ -312,7 +312,6 @@ const handleSidebarItemClick = (item: any) => {
   } else if (item.type === 'button' && item.data?.action === 'new-chat') {
     // Handle new chat
     console.log('New chat clicked')
-    // // For now, just alert
     alert('New chat functionality not implemented yet')
   }
 }
