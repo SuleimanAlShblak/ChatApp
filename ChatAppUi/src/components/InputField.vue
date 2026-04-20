@@ -9,7 +9,7 @@
       :disabled="disabled"
       :required="required"
       :class="inputClass"
-      @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+      @input="emit('update:modelValue', ($event.target as HTMLInputElement).value); emit('input', $event)"
       @keydown.enter="$emit('enter', $event)"
       @blur="$emit('blur', $event)"
       @focus="$emit('focus', $event)"
@@ -42,6 +42,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   'update:modelValue': [value: string | number]
+  input: [event: Event]
   blur: [event: FocusEvent]
   focus: [event: FocusEvent]
   enter: [event: KeyboardEvent]
@@ -63,51 +64,5 @@ const inputClass = computed(() => {
 const inputId = computed(() => props.inputId || `input-${Math.random().toString(36).substr(2, 9)}`)
 </script>
 
-<style scoped>
-.input-field-container {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.input-label {
-  font-weight: 500;
-  color: #374151;
-}
-
-.input-field {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  transition:
-    border-color 0.15s ease-in-out,
-    box-shadow 0.15s ease-in-out;
-}
-
-.input-field:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.input-field--error {
-  border-color: #ef4444;
-}
-
-.input-field--error:focus {
-  border-color: #ef4444;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
-}
-
-.input-field--disabled {
-  background-color: #f9fafb;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.input-error {
-  color: #ef4444;
-  font-size: 0.75rem;
-}
+<style>
 </style>

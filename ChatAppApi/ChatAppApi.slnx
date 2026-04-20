@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="ChatAppApi/ChatAppApi.csproj" />
+  <Project Path="ChatAppApiTests/ChatAppApiTests.csproj" Id="14bfa5f5-e14c-4cd8-9eb9-3bc2b4b654c1" />
 </Solution>
