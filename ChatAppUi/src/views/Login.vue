@@ -85,6 +85,5 @@ const handleLogin = async () => {
   </div>
 </template>
 
-<style scoped>
-
+<style>
 </style>

@@ -2,7 +2,7 @@
 
 namespace ChatAppApi.Helpers;
 
-public static class ValidationHelper
+public static class Helper
 {
     /// <summary>
     /// Validates the message format.
@@ -16,5 +16,6 @@ public static class ValidationHelper
                !string.IsNullOrEmpty(message.ReceiverId) &&
                !string.IsNullOrEmpty(message.Data);
     }
+
 }
 

@@ -21,8 +21,8 @@ public class ChatController : ControllerBase
     public IActionResult SendMessage(string senderId, string receiverId, string content)
     {
         if (string.IsNullOrWhiteSpace(senderId)
-            || string.IsNullOrWhiteSpace(receiverId)
-            || string.IsNullOrWhiteSpace(receiverId))
+            && string.IsNullOrWhiteSpace(receiverId)
+            && string.IsNullOrWhiteSpace(content))
         {
             return BadRequest("Invalid message format");
         }

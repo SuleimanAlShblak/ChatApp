@@ -1,6 +1,13 @@
 @import 'tailwindcss';
-/* @import './components/styles/button.css'; */
 @import './login.css';
+@import '../components/style/button.css';
+@import '../components/style/inputField.css';
+@import '../components/style/card.css';
+@import '../components/style/sideBar.css';
+@import '../components/style/messageBubble.css';
+@import '../components/style/typingIndicator.css';
+@import '../components/style/topBar.css';
+
 
 .app {
   display: flex;

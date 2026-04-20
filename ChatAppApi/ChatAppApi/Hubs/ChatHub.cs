@@ -60,7 +60,7 @@ public class ChatHub : Hub
     /// </summary>
     public async Task SendMessage(Message message)
     {
-        if (!ValidationHelper.IsValidMessage(message))
+        if (!Helper.IsValidMessage(message))
         {
             await Clients.Caller.SendAsync("ReceiveError", "Invalid message format");
             return;

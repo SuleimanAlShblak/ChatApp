@@ -1,0 +1,130 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: white;
+  border-right: 1px solid #e5e7eb;
+  transition: width 0.3s ease-in-out;
+}
+
+.sidebar--right {
+  border-right: none;
+  border-left: 1px solid #e5e7eb;
+}
+
+.sidebar--collapsed {
+  width: 60px !important;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.sidebar-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  border-radius: 0.375rem;
+  transition: all 0.15s ease-in-out;
+}
+
+.sidebar-toggle:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.sidebar-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Divider styles */
+.sidebar-items hr {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 0.5rem 0;
+}
+
+/* Spacer styles */
+.sidebar-items > div[data-type='spacer'] {
+  height: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .sidebar--open {
+    transform: translateX(0);
+  }
+}
+/* User card styles for clickable chat selection */
+.sidebar-user-card {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.sidebar-user-card:last-child {
+  border-bottom: none;
+}
+.sidebar-user-card.clickable:hover,
+.sidebar-user-card.clickable:focus {
+  background: #f3f4f6;
+}
+.user-avatar {
+  font-size: 1.5rem;
+  margin-right: 0.75rem;
+}
+.user-info {
+  flex: 1;
+}
+.user-name {
+  font-weight: 600;
+  color: #222;
+}
+.user-status {
+  font-size: 0.9rem;
+  color: #888;
+}
+.user-status.online {
+  color: #22c55e;
+}
+.user-status.offline {
+  color: #888;
+}
