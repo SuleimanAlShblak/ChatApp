@@ -66,18 +66,15 @@ public class ChatHub : Hub
             return;
         }
 
-        var user = _dataService.users.Values.FirstOrDefault(u => u.ConnectionId == Context.ConnectionId);
+        var receiver = _dataService.users.Values.FirstOrDefault(u => u.Id == message.ReceiverId);
 
-        if (user != null)
+        if (receiver != null && !string.IsNullOrEmpty(receiver.ConnectionId))
         {
-            if (string.IsNullOrEmpty(user.ChatRoom))
-            {
-                user.ChatRoom = "general";
-            }
-
-            await Clients.Group(user.ChatRoom).SendAsync("ReceiveSpecificMessage", message);
-            Log.Debug($"Message from {message.SenderId} to {message.ReceiverId}: {message.Data}");
+            await Clients.Client(receiver.ConnectionId).SendAsync("ReceiveMessage", message);
         }
+
+        await Clients.Caller.SendAsync("ReceiveMessage", message);
+        Log.Debug($"Message sent from {message.SenderId} to {message.ReceiverId}");
     }
 
     /// <summary>

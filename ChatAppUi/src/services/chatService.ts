@@ -19,7 +19,7 @@ export interface Message {
   Type: 'connect' | 'chat' | 'typing' | 'error'
   SenderId: string
   ReceiverId: string
-  Data: string
+  MessageContent: string
   Timestamp?: string
 }
 
@@ -33,7 +33,7 @@ export const normalizeUser = (user: User): User => ({
   DisplayName: user.DisplayName ?? user.UserName ?? '',
   Image: user.Image ?? '',
   Status: normalizeStatus(user.Status),
-  SenderId: user.SenderId ?? '', 
+  SenderId: user.SenderId ?? '',
   ReceiverId: user.ReceiverId ?? '',
   ChatRoom: user.ChatRoom ?? 'general',
 })
@@ -42,10 +42,9 @@ export const normalizeMessage = (message: Message): Message => ({
   Type: message.Type ?? 'chat',
   SenderId: message.SenderId ?? '',
   ReceiverId: message.ReceiverId ?? '',
-  Data: message.Data ?? '',
+  MessageContent: message.MessageContent ?? '',
   Timestamp: message.Timestamp ?? undefined,
 })
-
 
 const normalizeStatus = (status: unknown): string => {
   if (status === 0 || status === 'Online' || status === 'online') return 'online'
@@ -53,7 +52,7 @@ const normalizeStatus = (status: unknown): string => {
   return 'offline'
 }
 
-const hasValidValue = (value: string | null | undefined): value is string => { 
+const hasValidValue = (value: string | null | undefined): value is string => {
   return Boolean(value && value !== 'undefined' && value !== 'null')
 }
 
@@ -124,15 +123,12 @@ class ChatService {
       throw new Error('Cannot send message without a valid sender and receiver.')
     }
 
-    const response = await axios.post(
-      API_BASE_URL +
-        '/api/chat/message/' +
-        encodeURIComponent(normalizedMessage.SenderId) +
-        '/' +
-        encodeURIComponent(normalizedMessage.ReceiverId) +
-        '/' +
-        encodeURIComponent(normalizedMessage.Data),
-    )
+    const response = await axios.post(`${API_BASE_URL}/api/chat/message`, {
+      Type: normalizedMessage.Type,
+      SenderId: normalizedMessage.SenderId,
+      ReceiverId: normalizedMessage.ReceiverId,
+      MessageContent: normalizedMessage.MessageContent,
+    })
 
     const savedMessage: StoredChatMessage = {
       ...normalizedMessage,

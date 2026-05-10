@@ -113,21 +113,3 @@ When a user connects to the chat hub via SignalR, the server updates and broadca
 When a message is sent through the API, SignalR instantly delivers it to the recipient in real time. At the same time, typing activity is shared so users can see when someone is typing.
 
 ![SequenceDiagram](/assets/SequenceDiagram.png)  
-
-## What I Would Improve Next
-
-I would like to add the following improvements:
-
-- Authentication and authorization
-- Persistent database storage
-- The ability to delete messages after sending them
-- The ability to personalize user profiles
-- End-to-end UI tests
-- Docker container support (new Challenge)
-- Group chat support
-- General code improvements
-- UI/UX adjustments
-
-## Development Time
-
-The project was developed over one weeks and took about 26 to 28 hours.

@@ -11,7 +11,7 @@ public class SendMessageTests : TestBase
         await ConnectUser("Sven", "room1");
         MockClientProxy.Invocations.Clear();
 
-        var message = new Message { Type = "chat", SenderId = "s1", ReceiverId = "r1", Data = "Hello" };
+        var message = new Message { Type = "chat", SenderId = "s1", ReceiverId = "r1", MessageContent = "Hello" };
         await Hub.SendMessage(message);
 
         MockClientProxy.Verify(
@@ -25,7 +25,7 @@ public class SendMessageTests : TestBase
         stored.ChatRoom = null;
         MockClientProxy.Invocations.Clear();
 
-        var message = new Message { Type = "chat", SenderId = "s1", ReceiverId = "r1", Data = "Hi" };
+        var message = new Message { Type = "chat", SenderId = "s1", ReceiverId = "r1", MessageContent = "Hi" };
         await Hub.SendMessage(message);
 
         Assert.That(stored.ChatRoom, Is.EqualTo("general"));
@@ -43,7 +43,7 @@ public class SendMessageTests : TestBase
             Type = type,
             SenderId = senderId,
             ReceiverId = receiverId,
-            Data = data
+            MessageContent = data
         };
 
         await AssertInvalidMessageHandled(invalidMessage);

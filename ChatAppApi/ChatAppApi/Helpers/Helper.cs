@@ -14,7 +14,7 @@ public static class Helper
                new[] { "connect", "chat", "typing", "error" }.Contains(message.Type) &&
                !string.IsNullOrEmpty(message.SenderId) &&
                !string.IsNullOrEmpty(message.ReceiverId) &&
-               !string.IsNullOrEmpty(message.Data);
+               !string.IsNullOrEmpty(message.MessageContent);
     }
 
 }
