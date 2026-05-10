@@ -10,6 +10,6 @@ public class Message
 
     public DateTime Timestamp { get; set; }
 
-    public string? Data { get; set; }
+    public string? MessageContent { get; set; }
 }
 

@@ -86,9 +86,9 @@ const mapMessageUI = (message: StoredChatMessage): ChatMessage => {
     : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
   return {
-    id: `${normalizedMessage.SenderId || 'unknown'}-${normalizedMessage.ReceiverId || 'unknown'}-${timestamp || Date.now()}-${normalizedMessage.Data || ''}`,
+    id: `${normalizedMessage.SenderId || 'unknown'}-${normalizedMessage.ReceiverId || 'unknown'}-${timestamp || Date.now()}-${normalizedMessage.MessageContent || ''}`,
     sender: senderName,
-    message: normalizedMessage.Data || '',
+    message: normalizedMessage.MessageContent || '',
     time: displayTime,
     isOwn: normalizedMessage.SenderId === currentUser.value.id,
   }
@@ -213,7 +213,7 @@ onMounted(async () => {
     console.log('Typing event:', normalizedTypingEvent)
     const updatedTypingUsers = new Set(typingUsers.value)
 
-    if (normalizedTypingEvent.Data === 'true' && normalizedTypingEvent.SenderId) {
+    if (normalizedTypingEvent.MessageContent === 'true' && normalizedTypingEvent.SenderId) {
       updatedTypingUsers.add(normalizedTypingEvent.SenderId)
     } else if (normalizedTypingEvent.SenderId) {
       updatedTypingUsers.delete(normalizedTypingEvent.SenderId)
@@ -340,7 +340,7 @@ const sendMessage = async () => {
     Type: 'chat',
     SenderId: currentUser.value.id,
     ReceiverId: activeChatId.value,
-    Data: trimmed,
+    MessageContent: trimmed,
   }
 
   try {
@@ -363,7 +363,7 @@ const handleInput = () => {
     Type: 'typing',
     SenderId: currentUser.value.id,
     ReceiverId: activeChatId.value as string,
-    Data: 'true',
+    MessageContent: 'true',
   }
   chatService.sendTyping(typingEvent)
 
@@ -373,7 +373,7 @@ const handleInput = () => {
       Type: 'typing',
       SenderId: currentUser.value.id,
       ReceiverId: activeChatId.value as string,
-      Data: 'false',
+      MessageContent: 'false',
     }
     chatService.sendTyping(stopTypingEvent)
   }, 1000)
